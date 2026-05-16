@@ -11,15 +11,26 @@
 .pub/
 build/
 
+# macOS
+macos/Flutter/.Flutter-Debug.xcconfig
+macos/Flutter/.Flutter-Release.xcconfig
+macos/Podfile
+macos/Podfile.lock
+macos/Runner.xcodeproj/xcuserdata/
+macos/Runner.xcworkspace/xcuserdata/
+
+# iOS
+ios/Flutter/Debug.xcconfig
+ios/Flutter/Release.xcconfig
+ios/Podfile
+ios/Podfile.lock
+ios/Runner.xcodeproj/xcuserdata/
+ios/Runner.xcworkspace/xcuserdata/
+
 # Android
 *.apk
 *.aab
 android/app/src/main/res/google-services.json
-
-# iOS
-ios/Runner/Info.plist
-ios/Runner.xcodeproj/xcuserdata/
-ios/Flutter/Flutter.xcconfig
 
 # IDE
 .idea/
@@ -35,3 +46,12 @@ logs/
 *.bak
 *.tmp
 *.temp
+
+# Generated
+.mavis/
+
+# Build products
+**/*.xcuserstate
+**/*.pbxuser
+!ios/Runner.xcodeproj/project.pbxproj
+!macos/Runner.xcodeproj/project.pbxproj

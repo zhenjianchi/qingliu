@@ -6,6 +6,8 @@ class AbstinenceRecord {
   final DateTime? endTime;  // null if currently active
   final int goalDays;
   final bool isActive;
+  final int cumulativeDays; // Total days accumulated across all records (never reset on relapse)
+  final int successfulResists; // Number of times user successfully resisted urges
 
   AbstinenceRecord({
     required this.id,
@@ -13,6 +15,8 @@ class AbstinenceRecord {
     this.endTime,
     required this.goalDays,
     required this.isActive,
+    this.cumulativeDays = 0,
+    this.successfulResists = 0,
   });
 
   /// Duration since start (or until end if ended)
@@ -46,6 +50,8 @@ class AbstinenceRecord {
     DateTime? endTime,
     int? goalDays,
     bool? isActive,
+    int? cumulativeDays,
+    int? successfulResists,
   }) {
     return AbstinenceRecord(
       id: id ?? this.id,
@@ -53,6 +59,8 @@ class AbstinenceRecord {
       endTime: endTime ?? this.endTime,
       goalDays: goalDays ?? this.goalDays,
       isActive: isActive ?? this.isActive,
+      cumulativeDays: cumulativeDays ?? this.cumulativeDays,
+      successfulResists: successfulResists ?? this.successfulResists,
     );
   }
 
@@ -62,6 +70,8 @@ class AbstinenceRecord {
     'endTime': endTime?.toIso8601String(),
     'goalDays': goalDays,
     'isActive': isActive,
+    'cumulativeDays': cumulativeDays,
+    'successfulResists': successfulResists,
   };
 
   factory AbstinenceRecord.fromJson(Map<String, dynamic> json) => AbstinenceRecord(
@@ -70,6 +80,8 @@ class AbstinenceRecord {
     endTime: json['endTime'] != null ? DateTime.parse(json['endTime'] as String) : null,
     goalDays: json['goalDays'] as int,
     isActive: json['isActive'] as bool,
+    cumulativeDays: json['cumulativeDays'] as int? ?? 0,
+    successfulResists: json['successfulResists'] as int? ?? 0,
   );
 
   @override

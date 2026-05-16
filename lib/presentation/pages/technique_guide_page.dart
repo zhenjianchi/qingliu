@@ -130,7 +130,21 @@ class _TechniqueGuidePageState extends State<TechniqueGuidePage> {
           child: Column(
             children: [
               // Technique name & mechanism
-              Text(widget.technique.icon, style: const TextStyle(fontSize: 60)),
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: widget.technique.iconColor.withAlpha(26),
+                  borderRadius: BorderRadius.circular(kBorderRadiusLarge),
+                ),
+                child: Center(
+                  child: Icon(
+                    widget.technique.icon,
+                    color: widget.technique.iconColor,
+                    size: 40,
+                  ),
+                ),
+              ),
               const SizedBox(height: 16),
               Text(
                 widget.technique.name,
