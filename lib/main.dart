@@ -67,30 +67,32 @@ class QingliuApp extends StatelessWidget {
 }
 
 /// Root gate: shows onboarding if first-time, else MainShell
+/// BlocProvider wraps the entire gate so AbstinenceBloc is available
+/// during onboarding (for goal setup) and main shell
 class _RootGate extends StatelessWidget {
   const _RootGate();
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<bool>(
-      future: _isOnboardingComplete(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(color: Color(0xFF58CC02)),
-            ),
-          );
-        }
-        final done = snapshot.data!;
-        if (done) {
-          return BlocProvider(
-            create: (_) => AbstinenceBloc()..add(AbstinenceLoadRequested()),
-            child: const MainShell(),
-          );
-        }
-        return const WelcomePage();
-      },
+    return BlocProvider(
+      create: (_) => AbstinenceBloc()..add(AbstinenceLoadRequested()),
+      child: FutureBuilder<bool>(
+        future: _isOnboardingComplete(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Scaffold(
+              body: Center(
+                child: CircularProgressIndicator(color: Color(0xFF58CC02)),
+              ),
+            );
+          }
+          final done = snapshot.data!;
+          if (done) {
+            return const MainShell();
+          }
+          return const WelcomePage();
+        },
+      ),
     );
   }
 
