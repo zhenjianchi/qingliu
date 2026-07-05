@@ -1,66 +1,88 @@
 /// App-wide constants for 清流 (Qingliu)
+/// V2.0 - Lingo Design System palette
 library;
 
 /// App metadata
 const String kAppName = '清流';
 const String kAppNameEn = 'Qingliu';
-const String kAppVersion = '1.0.0';
-const int kBuildNumber = 1;
+const String kAppVersion = '2.0.0';
+const int kBuildNumber = 2;
 
 /// ============================================================================
-/// Modern Health Tech Color Palette - 现代健康科技色系
-/// 核心理念：科技感、清爽、专业、年轻化
+/// Lingo Design System Color Palette
+/// 参考: https://open-design.ai/plugins/design-system-lingo/
+/// 核心理念：游戏化、活力、成长、年轻
 /// ============================================================================
 
-/// Primary colors - Ocean Blue (科技感、信任、冷静)
-const int kColorPrimary = 0xFF0077B6;       // 海洋蓝
-const int kColorPrimaryDark = 0xFF005F8A;   // 深海洋蓝
-const int kColorPrimaryLight = 0xFFE6F3FF; // 浅蓝背景
+/// Primary - Duolingo Green (进步、活力、成长)
+const int kColorPrimary = 0xFF58CC02;
+const int kColorPrimaryDark = 0xFF46A601;
+const int kColorPrimaryLight = 0xFFE9FAD9;
 
-/// Secondary colors - Soft Blue Gray
-const int kColorSecondary = 0xFF5C6B73;     // 蓝灰色
-const int kColorSecondaryDark = 0xFF4A565E;
-const int kColorSecondaryLight = 0xFF8A9399;
+/// Secondary - Lavender Purple (平静、专注)
+const int kColorSecondary = 0xFFCE82FF;
+const int kColorSecondaryDark = 0xFFA65AE8;
+const int kColorSecondaryLight = 0xFFF3E5FF;
 
-/// Accent colors - Fresh Teal (活力、健康、成长)
-const int kColorAccent = 0xFF00D4AA;        // 清新绿
+/// Accent - Fresh Teal (保留作为过渡强调)
+const int kColorAccent = 0xFF00D4AA;
 const int kColorAccentDark = 0xFF00B894;
 const int kColorAccentLight = 0xFFB8F4E0;
 
-/// Background colors - Cool modern
-const int kColorBackground = 0xFFF8FAFB;    // 冷白背景
-const int kColorSurface = 0xFFFFFFFF;       // 纯白卡片
-const int kColorSurfaceAlt = 0xFFF0F4F8;    // 交替卡片
+/// Warning - Bright Yellow (能量、提示)
+const int kColorWarning = 0xFFFFC800;
+const int kColorWarningDark = 0xFFE6B400;
 
-/// Text colors - Clear contrast
-const int kColorTextPrimary = 0xFF1A2634;   // 深色文字
-const int kColorTextSecondary = 0xFF5C6B73; // 次要文字
-const int kColorTextHint = 0xFF9AA5B1;     // 提示文字
-const int kColorTextOnPrimary = 0xFFFFFFFF; // 主色上文字
+/// Danger - Bright Red (警示、紧迫)
+const int kColorDanger = 0xFFFF4B4B;
+const int kColorError = 0xFFFF4B4B;
 
-/// Semantic colors
-const int kColorError = 0xFFE53935;         // 红色
-const int kColorWarning = 0xFFFF9800;      // 橙色
-const int kColorSuccess = 0xFF00D4AA;      // 绿色
-const int kColorInfo = 0xFF0077B6;         // 蓝色
+/// Info - Cool Blue (理性、科学)
+const int kColorInfo = 0xFF5B6CFF;
+const int kColorSuccess = 0xFF22A06B;
 
-/// Gradient definitions
-const List<int> kGradientPrimary = [0xFF0077B6, 0xFF00B4D8]; // 蓝色渐变
-const List<int> kGradientAccent = [0xFF00D4AA, 0xFF00B894];  // 绿色渐变
-const List<int> kGradientCool = [0xFF667EEA, 0xFF764BA2];   // 紫色渐变
+/// Background colors
+const int kColorBackground = 0xFFFAFAFA;
+const int kColorSurface = 0xFFFFFFFF;
+const int kColorSurfaceAlt = 0xFFF7F7F7;
 
-/// Shadow colors
-const int kShadowColor = 0x1A000000;
+/// Text colors
+const int kColorTextPrimary = 0xFF3C3C3C;
+const int kColorTextSecondary = 0xFF6B6B6B;
+const int kColorTextHint = 0xFF9CA3AF;
+const int kColorTextOnPrimary = 0xFFFFFFFF;
+
+/// Gradient definitions (Lingo inspired)
+const List<int> kGradientPrimary = [0xFF58CC02, 0xFF7BE325];
+const List<int> kGradientAccent = [0xFFCE82FF, 0xFFA65AE8];
+const List<int> kGradientCool = [0xFF667EEA, 0xFF764BA2];
+const List<int> kGradientWarm = [0xFFFF8C42, 0xFFFFC800];
+
+/// Shadow / 3D elevation
+const int kShadowColor = 0x14000000;          // 8% black
 const int kShadowColorLight = 0x0D000000;
 const int kShadowColorMedium = 0x26000000;
+const int kShadowColorGreen = 0x2E58CC02;     // 18% primary - for green glow
 
 /// Dark mode colors
-const int kColorDarkBackground = 0xFF0F1419;
-const int kColorDarkSurface = 0xFF1A2634;
-const int kColorDarkSurfaceAlt = 0xFF242D3B;
-const int kColorDarkTextPrimary = 0xFFE7E9EA;
-const int kColorDarkTextSecondary = 0xFF8B98A5;
-const int kColorDarkTextHint = 0xFF6E7681;
+const int kColorDarkBackground = 0xFF1A1B2A;
+const int kColorDarkSurface = 0xFF252736;
+const int kColorDarkSurfaceAlt = 0xFF2F3142;
+const int kColorDarkTextPrimary = 0xFFF5F5F7;
+const int kColorDarkTextSecondary = 0xFFA0A0AC;
+const int kColorDarkTextHint = 0xFF6B6B7B;
+
+/// ============================================================================
+/// Mood color scale (5 levels for mood tracking / DayWall)
+/// ============================================================================
+const List<int> kMoodColors = [
+  0xFFFF4B4B, // 1 - 很差 (红)
+  0xFFFF8C42, // 2 - 不好 (橙)
+  0xFFFFC800, // 3 - 一般 (黄)
+  0xFF58CC02, // 4 - 好 (绿)
+  0xFFCE82FF, // 5 - 非常好 (紫)
+];
+const List<String> kMoodEmojis = ['😢', '😟', '😐', '😊', '🔥'];
 
 /// ============================================================================
 /// Neural Recovery Descriptions - 神经恢复描述（科学叙事）
@@ -101,6 +123,26 @@ const Map<int, String> kMilestoneEmojis = {
 };
 
 /// ============================================================================
+/// XP/Level system
+/// ============================================================================
+const List<int> kLevelThresholds = [
+  0, 100, 300, 600, 1000, 1500, 2100, 2800, 3600, 4500, 5500,
+];
+const List<String> kLevelTitles = [
+  '新手', '萌芽', '成长', '觉醒', '坚定',
+  '战士', '勇者', '大师', '传奇', '神话', '不朽',
+];
+
+/// XP rewards
+const int kXPDailyCheckIn = 20;
+const int kXPUrgeResisted = 50;
+const int kXPTechniqueComplete = 30;
+const int kXPStreak7Day = 200;
+const int kXPStreak30Day = 1000;
+const int kXPJournalEntry = 15;
+const int kXPTriggerLog = 10;
+
+/// ============================================================================
 /// Default settings
 /// ============================================================================
 const int kDefaultAbstinenceGoal = 30;
@@ -133,29 +175,44 @@ const String kStorageNotificationsEnabled = 'notifications_enabled';
 const String kStorageMilestoneAlertsEnabled = 'milestone_alerts_enabled';
 const String kStorageDarkModeEnabled = 'dark_mode_enabled';
 const String kStorageLocale = 'locale';
+const String kStorageXP = 'user_xp';
+const String kStorageAchievements = 'achievements';
+const String kStorageMoodEntries = 'mood_entries';
 
 /// ============================================================================
-/// Animation durations
+/// Animation durations (Lingo-style: short, purposeful)
 /// ============================================================================
-const int kAnimDurationMs = 300;
-const int kAnimDurationFastMs = 150;
-const int kAnimDurationSlowMs = 600;
+const int kAnimDurationMs = 230;          // Lingo --motion-base
+const int kAnimDurationFastMs = 150;      // Lingo --motion-fast
+const int kAnimDurationSlowMs = 400;
+const int kAnimDurationCelebrationMs = 1500;
 
 /// ============================================================================
-/// UI dimensions - 统一圆角系统
+/// UI dimensions - 统一圆角系统 (Lingo: rounded, tactile)
 /// ============================================================================
 const double kBorderRadius = 16.0;
-const double kBorderRadiusSmall = 12.0;
+const double kBorderRadiusSmall = 10.0;
 const double kBorderRadiusLarge = 24.0;
 const double kBorderRadiusXLarge = 32.0;
+const double kBorderRadiusPill = 9999.0;
 const double kPaddingSmall = 8.0;
 const double kPaddingMedium = 16.0;
 const double kPaddingLarge = 24.0;
 const double kPaddingXLarge = 32.0;
 const double kSafeAreaBottom = 34.0;
 
+/// 3D border thickness for tactile effect
+const double kBorderWidth3D = 2.0;
+const double kBorderWidth3DThick = 3.0;
+
 /// ============================================================================
 /// Touch target sizes - 手指友好尺寸
 /// ============================================================================
-const double kMinButtonHeight = 56.0;    // 最小按钮高度
-const double kMinTouchTarget = 48.0;     // 最小触控区域
+const double kMinButtonHeight = 56.0;
+const double kMinTouchTarget = 48.0;
+
+/// ============================================================================
+/// DayWall - mood timeline grid
+/// ============================================================================
+const int kDayWallDays = 30;
+const int kDayWallColumns = 7;
