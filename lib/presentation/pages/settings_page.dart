@@ -1,383 +1,608 @@
-import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:path/path.dart' as path;
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_constants.dart';
-import '../../core/log/app_logger.dart';
-import '../../data/datasources/local_datasource.dart';
+import '../../core/theme/app_theme.dart';
 
+/// V3.0 Settings Page (iOS-style)
+/// 参考: doc/design/20260705/HTML/mobile-settings.html
+///
+/// - Account card (avatar + name + streak)
+/// - Notifications (3 toggles)
+/// - Privacy (3 rows)
+/// - Appearance (theme, language)
+/// - About (4 links)
+/// - Sign out + version footer
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
+
   @override
   State<SettingsPage> createState() => _SettingsPageState();
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  final _logger = AppLogger.instance;
-  int _goalDays = 30;
-  bool _notificationsEnabled = true;
-  bool _milestoneAlertsEnabled = true;
-  bool _darkModeEnabled = false;
-  bool _isExporting = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadSettings();
-  }
-
-  Future<void> _loadSettings() async {
-    try {
-      final ds = LocalDataSource.instance;
-      final goal = await ds.getSetting(kStorageGoalDays);
-      final notif = await ds.getSetting(kStorageNotificationsEnabled);
-      final milestone = await ds.getSetting(kStorageMilestoneAlertsEnabled);
-      final dark = await ds.getSetting(kStorageDarkModeEnabled);
-
-      setState(() {
-        if (goal != null) _goalDays = int.tryParse(goal) ?? 30;
-        if (notif != null) _notificationsEnabled = notif == 'true';
-        if (milestone != null) _milestoneAlertsEnabled = milestone == 'true';
-        if (dark != null) _darkModeEnabled = dark == 'true';
-      });
-    } catch (e, st) {
-      _logger.error('Failed to load settings', error: e, stackTrace: st);
-    }
-  }
-
-  Future<void> _saveSetting(String key, String value) async {
-    await LocalDataSource.instance.setSetting(key, value);
-    _logger.info('Setting saved: $key = $value', tag: 'Settings');
-  }
-
-  Future<void> _exportData() async {
-    if (_isExporting) return;
-    setState(() => _isExporting = true);
-
-    try {
-      final ds = LocalDataSource.instance;
-      final abstinence = await ds.getAbstinenceRecords();
-      final triggers = await ds.getTriggerLogs();
-      final urgeLogs = await ds.getUrgeLogs();
-      final milestones = await ds.getMilestones();
-
-      final exportData = {
-        'exportedAt': DateTime.now().toIso8601String(),
-        'abstinenceRecords': abstinence,
-        'triggerLogs': triggers,
-        'urgeLogs': urgeLogs,
-        'milestones': milestones,
-        'settings': {
-          'goalDays': _goalDays,
-          'notificationsEnabled': _notificationsEnabled,
-          'milestoneAlertsEnabled': _milestoneAlertsEnabled,
-        },
-      };
-
-      final json = const JsonEncoder.withIndent('  ').convert(exportData);
-      final fileName = 'qingliu_export_${DateTime.now().millisecondsSinceEpoch}.json';
-      final exportDir = Directory(path.join(Directory.current.path, 'exports'));
-      await exportDir.create(recursive: true);
-      final filePath = path.join(exportDir.path, fileName);
-      await File(filePath).writeAsString(json);
-
-      _logger.info('Data exported to $filePath', tag: 'Settings');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('数据已导出至 exports/$fileName')),
-        );
-      }
-    } catch (e, st) {
-      _logger.error('Failed to export data', error: e, stackTrace: st);
-    } finally {
-      if (mounted) setState(() => _isExporting = false);
-    }
-  }
-
-  Future<void> _clearAllData() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('确认清除所有数据'),
-        content: const Text(
-          '此操作不可撤销。\n所有戒断记录、触发日志、渴望记录都将被永久删除。',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('取消'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Color(kColorError)),
-            child: const Text('确认清除'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      await LocalDataSource.instance.clearAllData();
-      _logger.warning('All data cleared by user', tag: 'Settings');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('所有数据已清除')),
-        );
-      }
-    }
-  }
+  bool _morningReminder = true;
+  bool _eveningReminder = true;
+  bool _riskReminder = true;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('设置')),
-      body: ListView(
-        padding: const EdgeInsets.all(kPaddingMedium),
-        children: [
-          // Abstinence goal
-          _buildSectionTitle('戒断目标'),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: _cardDecoration(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('自定义戒断天数', style: TextStyle(fontWeight: FontWeight.w600)),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  children: [7, 14, 30, 60, 90, 180].map((days) {
-                    final selected = days == _goalDays;
-                    return ChoiceChip(
-                      label: Text('$days 天'),
-                      selected: selected,
-                      selectedColor: Color(kColorPrimary),
-                      labelStyle: TextStyle(
-                        color: selected ? Colors.white : Color(kColorTextPrimary),
+      backgroundColor: const Color(kColorBackground),
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(context),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(0, 8, 0, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildSection(
+                      label: '账户',
+                      child: _accountCard(),
+                    ),
+                    _buildSection(
+                      label: '通知',
+                      child: _card([
+                        _toggleRow(
+                          title: '早晨承诺提醒',
+                          sub: '每天 08:00 · "新的一天开始了"',
+                          value: _morningReminder,
+                          onChanged: (v) => setState(() => _morningReminder = v),
+                        ),
+                        _divider(),
+                        _toggleRow(
+                          title: '夜间回顾',
+                          sub: '每天 22:00 · "睡前花 2 分钟看看今天"',
+                          value: _eveningReminder,
+                          onChanged: (v) => setState(() => _eveningReminder = v),
+                        ),
+                        _divider(),
+                        _toggleRow(
+                          title: '高风险时段',
+                          sub: '根据你历史数据动态学习',
+                          value: _riskReminder,
+                          onChanged: (v) => setState(() => _riskReminder = v),
+                        ),
+                      ]),
+                    ),
+                    _buildSection(
+                      label: '隐私',
+                      child: _card([
+                        _valueRow(
+                          title: 'AI 对话本地处理',
+                          sub: '对话内容不上云，不留存',
+                          value: '已开启',
+                        ),
+                        _divider(),
+                        _valueRow(
+                          title: '数据所有权',
+                          sub: '所有记录都保存在你的设备上',
+                          value: '本地',
+                        ),
+                        _divider(),
+                        _dangerRow(
+                          title: '删除所有数据',
+                          sub: '不可恢复 · 保留 0 天的清白',
+                          onTap: _confirmDelete,
+                        ),
+                      ]),
+                    ),
+                    _buildSection(
+                      label: '外观',
+                      child: _card([
+                        _valueRow(
+                          title: '主题',
+                          sub: '温暖陪伴 · 沙色基底',
+                          value: '温暖陪伴',
+                        ),
+                        _divider(),
+                        _valueRow(
+                          title: '语言',
+                          sub: '跟随系统设置',
+                          value: '简体中文',
+                        ),
+                      ]),
+                    ),
+                    _buildSection(
+                      label: '关于',
+                      child: _card([
+                        _arrowRow(title: '神经科学来源', onTap: () {}),
+                        _divider(),
+                        _arrowRow(title: '非临床免责声明', onTap: () {}),
+                        _divider(),
+                        _arrowRow(title: '隐私政策', onTap: () {}),
+                        _divider(),
+                        _arrowRow(title: '开源许可', onTap: () {}),
+                      ]),
+                    ),
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: InkWell(
+                        onTap: _signOut,
+                        borderRadius: BorderRadius.circular(kBorderRadiusPill),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            color: const Color(kColorSurface),
+                            borderRadius:
+                                BorderRadius.circular(kBorderRadiusPill),
+                            border: Border.all(color: const Color(kColorBorder)),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            '退出登录',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: const Color(kColorTextPrimary),
+                            ),
+                          ),
+                        ),
                       ),
-                      onSelected: (_) async {
-                        setState(() => _goalDays = days);
-                        await _saveSetting(kStorageGoalDays, '$days');
-                      },
-                    );
-                  }).toList(),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'v1.0.0 · build 2026.05.16 · 清流',
+                      textAlign: TextAlign.center,
+                      style: AppTheme.monoLabel(
+                        color: const Color(kColorTextMeta),
+                        fontSize: 10,
+                      ).copyWith(letterSpacing: 0.08),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
 
-          // Notifications
-          _buildSectionTitle('通知管理'),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: _cardDecoration(),
-            child: Column(
-              children: [
-                _buildSwitchTile(
-                  title: '预测性提醒',
-                  subtitle: '在高风险时段发送健康提醒',
-                  value: _notificationsEnabled,
-                  onChanged: (v) async {
-                    setState(() => _notificationsEnabled = v);
-                    await _saveSetting(kStorageNotificationsEnabled, '$v');
-                  },
+  Widget _buildHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 8, 20, 0),
+      child: Row(
+        children: [
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => Navigator.of(context).pop(),
+              borderRadius: BorderRadius.circular(999),
+              child: Container(
+                width: 36,
+                height: 36,
+                alignment: Alignment.center,
+                child: const Icon(
+                  Icons.arrow_back,
+                  size: 18,
+                  color: Color(kColorTextPrimary),
                 ),
-                const Divider(),
-                _buildSwitchTile(
-                  title: '里程碑提醒',
-                  subtitle: '达成里程碑时发送庆祝通知',
-                  value: _milestoneAlertsEnabled,
-                  onChanged: (v) async {
-                    setState(() => _milestoneAlertsEnabled = v);
-                    await _saveSetting(kStorageMilestoneAlertsEnabled, '$v');
-                  },
-                ),
-              ],
+              ),
             ),
           ),
-          const SizedBox(height: 20),
-
-          // Appearance
-          _buildSectionTitle('外观'),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: _cardDecoration(),
-            child: _buildSwitchTile(
-              title: '深色模式',
-              subtitle: '夜间使用，减少屏幕亮度对睡眠的影响',
-              value: _darkModeEnabled,
-              onChanged: (v) async {
-                setState(() => _darkModeEnabled = v);
-                await _saveSetting(kStorageDarkModeEnabled, '$v');
-              },
+          const SizedBox(width: 8),
+          Text(
+            '设置',
+            style: GoogleFonts.inter(
+              fontSize: 22,
+              fontWeight: FontWeight.w600,
+              color: const Color(kColorTextPrimary),
+              letterSpacing: -0.4,
             ),
           ),
-          const SizedBox(height: 20),
-
-          // Data management
-          _buildSectionTitle('数据管理'),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: _cardDecoration(),
-            child: Column(
-              children: [
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.download, color: Color(kColorSecondary)),
-                  title: const Text('导出数据（JSON）'),
-                  subtitle: const Text('将所有本地数据导出为JSON文件'),
-                  trailing: _isExporting
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Icon(Icons.chevron_right),
-                  onTap: _isExporting ? null : _exportData,
-                ),
-                const Divider(),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.delete_forever, color: Color(kColorError)),
-                  title: const Text('清除所有数据', style: TextStyle(color: Color(kColorError))),
-                  subtitle: const Text('永久删除所有本地数据'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: _clearAllData,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // About
-          _buildSectionTitle('关于'),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: _cardDecoration(),
-            child: Column(
-              children: [
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.water_drop, color: Color(kColorSecondary)),
-                  title: const Text('清流'),
-                  subtitle: const Text('健康习惯管理工具'),
-                  trailing: Text(
-                    'v$kAppVersion',
-                    style: const TextStyle(color: Color(kColorTextSecondary)),
-                  ),
-                ),
-                const Divider(),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.privacy_tip_outlined, color: Color(kColorSecondary)),
-                  title: const Text('隐私政策'),
-                  trailing: const Icon(Icons.open_in_new, size: 18),
-                  onTap: () => _showPrivacyPolicy(),
-                ),
-                const Divider(),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.warning_amber_outlined, color: Color(kColorWarning)),
-                  title: const Text('免责声明'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => _showDisclaimer(),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 40),
         ],
       ),
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSection({required String label, required Widget child}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8, left: 4),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: Color(kColorTextSecondary),
-        ),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+            child: Text(
+              label.toUpperCase(),
+              style: AppTheme.monoLabel(
+                color: const Color(kColorTextHint),
+                fontSize: 11,
+              ).copyWith(letterSpacing: 0.12),
+            ),
+          ),
+          child,
+        ],
       ),
     );
   }
 
-  BoxDecoration _cardDecoration() {
-    return BoxDecoration(
-      color: Color(kColorSurface),
-      borderRadius: BorderRadius.circular(kBorderRadius),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withAlpha(13),
-          blurRadius: 8,
-          offset: const Offset(0, 2),
-        ),
-      ],
+  Widget _card(List<Widget> rows) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(kColorSurface),
+        borderRadius: BorderRadius.circular(kBorderRadius),
+        border: Border.all(color: const Color(kColorBorder)),
+      ),
+      child: Column(children: rows),
     );
   }
 
-  Widget _buildSwitchTile({
+  Widget _divider() {
+    return const Padding(
+      padding: EdgeInsets.only(left: 16),
+      child: Divider(
+        height: 1,
+        thickness: 0.5,
+        color: Color(kColorBorderSoft),
+      ),
+    );
+  }
+
+  Widget _accountCard() {
+    return _card([
+      Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [Color(0xFFC96442), Color(0xFFD57A4F)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                '宇',
+                style: GoogleFonts.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '小宇',
+                    style: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(kColorTextPrimary),
+                      letterSpacing: -0.1,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '第 23 天 · 你还在。这就够了。',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: const Color(kColorTextHint),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ]);
+  }
+
+  Widget _toggleRow({
     required String title,
-    required String subtitle,
+    required String sub,
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 2),
-              Text(subtitle, style: const TextStyle(fontSize: 12, color: Color(kColorTextSecondary))),
-            ],
-          ),
+    return InkWell(
+      onTap: () => onChanged(!value),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(kColorTextPrimary),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    sub,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: const Color(kColorTextHint),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            _toggle(value: value),
+          ],
         ),
-        Switch(
-          value: value,
-          activeColor: Color(kColorSecondary),
-          onChanged: onChanged,
-        ),
-      ],
-    );
-  }
-
-  void _showPrivacyPolicy() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('隐私政策'),
-        content: const SingleChildScrollView(
-          child: Text(
-            '清流承诺保护您的隐私。\n\n'
-            '• 所有数据仅存储在您的设备本地\n'
-            '• 数据不会上传至任何服务器\n'
-            '• 应用内无任何广告和第三方追踪\n'
-            '• 您的数据仅您可访问\n'
-            '• 可随时清除所有本地数据',
-          ),
-        ),
-        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('关闭'))],
       ),
     );
   }
 
-  void _showDisclaimer() {
+  Widget _valueRow({
+    required String title,
+    required String sub,
+    required String value,
+  }) {
+    return InkWell(
+      onTap: () {},
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(kColorTextPrimary),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    sub,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: const Color(kColorTextHint),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              value,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: const Color(kColorTextSecondary),
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Icon(
+              Icons.chevron_right,
+              size: 16,
+              color: Color(kColorTextHint),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _dangerRow({
+    required String title,
+    required String sub,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(kColorDanger),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    sub,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: const Color(kColorTextHint),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right,
+              size: 16,
+              color: Color(kColorTextHint),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _arrowRow({required String title, required VoidCallback onTap}) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(kColorTextPrimary),
+                ),
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right,
+              size: 16,
+              color: Color(kColorTextHint),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _toggle({required bool value}) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      width: 50,
+      height: 30,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: value
+            ? const Color(kColorSuccess)
+            : const Color(kColorBorder),
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          AnimatedAlign(
+            duration: const Duration(milliseconds: 220),
+            alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+            child: Padding(
+              padding: const EdgeInsets.all(2),
+              child: Container(
+                width: 26,
+                height: 26,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0x33000000),
+                      blurRadius: 2,
+                      offset: Offset(0, 1),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDelete() {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('免责声明'),
-        content: const SingleChildScrollView(
-          child: Text(
-            '清流是一款健康习惯辅助工具，非专业医学或心理咨询产品。\n\n'
-            '• 本应用不能替代专业的医学诊断或治疗\n'
-            '• 如有严重困扰，建议寻求专业帮助\n'
-            '• 戒断过程中的反复是正常的，不要过度自责\n'
-            '• 心理健康公益热线：全国心理援助热线 400-161-9995',
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(kColorBackground),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(kBorderRadiusLarge),
+        ),
+        title: Text(
+          '删除所有数据？',
+          style: GoogleFonts.inter(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
           ),
         ),
-        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('关闭'))],
+        content: Text(
+          '这一步不可恢复。你的 23 天累计和所有记录都会消失。',
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            color: const Color(kColorTextSecondary),
+            height: 1.5,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              '取消',
+              style: GoogleFonts.inter(color: const Color(kColorTextSecondary)),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '保留操作',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                  ),
+                ),
+              );
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(kColorDanger),
+            ),
+            child: const Text('确认删除'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _signOut() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(kColorBackground),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(kBorderRadiusLarge),
+        ),
+        title: Text(
+          '退出登录？',
+          style: GoogleFonts.inter(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: Text(
+          '你随时可以回来。你的记录还在。',
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            color: const Color(kColorTextSecondary),
+            height: 1.5,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              '取消',
+              style: GoogleFonts.inter(color: const Color(kColorTextSecondary)),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(kColorPrimary),
+            ),
+            child: const Text('确定'),
+          ),
+        ],
       ),
     );
   }
