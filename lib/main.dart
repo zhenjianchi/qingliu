@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'core/theme/app_theme.dart';
 import 'core/log/app_logger.dart';
 import 'data/datasources/local_datasource.dart';
 import 'presentation/blocs/abstinence_bloc.dart';
 import 'presentation/pages/home_page.dart';
+import 'presentation/pages/onboarding/welcome_page.dart';
 import 'presentation/pages/progress_page.dart';
 import 'presentation/pages/settings_page.dart';
 
@@ -59,11 +61,42 @@ class QingliuApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home: BlocProvider(
-        create: (_) => AbstinenceBloc()..add(AbstinenceLoadRequested()),
-        child: const MainShell(),
-      ),
+      home: const _RootGate(),
     );
+  }
+}
+
+/// Root gate: shows onboarding if first-time, else MainShell
+class _RootGate extends StatelessWidget {
+  const _RootGate();
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: _isOnboardingComplete(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(color: Color(0xFF58CC02)),
+            ),
+          );
+        }
+        final done = snapshot.data!;
+        if (done) {
+          return BlocProvider(
+            create: (_) => AbstinenceBloc()..add(AbstinenceLoadRequested()),
+            child: const MainShell(),
+          );
+        }
+        return const WelcomePage();
+      },
+    );
+  }
+
+  Future<bool> _isOnboardingComplete() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('onboarding_complete') ?? false;
   }
 }
 
