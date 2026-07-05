@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/constants/app_constants.dart';
-import '../../domain/entities/achievement.dart';
-import '../../domain/entities/user_level.dart';
-import '../../domain/services/achievement_service.dart';
+import '../../core/theme/app_theme.dart';
 import '../blocs/abstinence_bloc.dart';
-import '../widgets/atoms.dart';
-import '../widgets/day_wall.dart';
-import '../widgets/tactile_card.dart';
 import 'urge_panel_page.dart';
-import 'relapse_support_page.dart';
+import 'progress_page.dart';
+import 'trigger_log_page.dart';
+import 'ai_support_page.dart';
+import 'settings_page.dart';
 
-/// V2.0 HomePage - Lingo Design System
+/// V3.0 Home Page (iOS-style)
+/// 参考: doc/design/20260705/HTML/mobile-ios.html (Screen 01)
 ///
-/// Hero number + brain recovery + daily ritual + DayWall + achievements + level
+/// - Greeting header (date + "早安，小宇")
+/// - Dark hero card with day counter
+/// - 2x2 quick action grid
+/// - Today's stats (flat cards)
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -22,172 +25,405 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
-  late AnimationController _fadeCtrl;
-  late Animation<double> _fadeAnim;
-
-  // Demo achievements (in real app, would come from repository)
-  late List<Achievement> _achievements;
-  // Demo XP
-  final int _userXP = 1240;
+class _HomePageState extends State<HomePage> {
+  String _userName = '朋友';
 
   @override
   void initState() {
     super.initState();
-    _achievements = AchievementService.getAllAchievements();
-
-    _fadeCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
-    _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
-    _fadeCtrl.forward();
+    _loadUserName();
   }
 
-  @override
-  void dispose() {
-    _fadeCtrl.dispose();
-    super.dispose();
+  Future<void> _loadUserName() async {
+    final prefs = await SharedPreferences.getInstance();
+    final name = prefs.getString(kStorageUserName);
+    if (!mounted) return;
+    if (name != null && name.isNotEmpty) {
+      setState(() => _userName = name);
+    }
+  }
+
+  String _formatDate() {
+    final now = DateTime.now();
+    const weekdays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+    return '${weekdays[now.weekday - 1]} · ${now.month}月${now.day}';
+  }
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 6) return '夜深了';
+    if (hour < 11) return '早安';
+    if (hour < 13) return '中午好';
+    if (hour < 18) return '下午好';
+    if (hour < 22) return '晚上好';
+    return '夜深了';
+  }
+
+  String _formatElapsed(Duration d) {
+    final days = d.inDays;
+    final hours = d.inHours.remainder(24);
+    final mins = d.inMinutes.remainder(60);
+    final secs = d.inSeconds.remainder(60);
+    return '${days}天 ${hours.toString().padLeft(2, '0')}:${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+  }
+
+  String _getWeekLabel(int days) {
+    return '第 ${(days / 7).floor() + 1} 周';
+  }
+
+  String _getNeuralMessage(int days) {
+    if (days < 1) return '启程 · 你的大脑开始重新校准';
+    if (days < 7) return '多巴胺受体开始适应非人工刺激的节奏';
+    if (days < 14) return '前额叶功能持续改善中';
+    if (days < 30) return '突触连接重塑中 · 你的意志力在增强';
+    if (days < 60) return '神经递质水平初步恢复基线';
+    return '多巴胺受体密度增加 · 你的神经系统正在重塑';
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: const Color(kColorBackground),
       body: BlocConsumer<AbstinenceBloc, AbstinenceState>(
         listener: (context, state) {
           if (state is AbstinenceJustRelapsed) {
-            _showRelapsePage(context, state);
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => TriggerLogPage(),
+              ),
+            );
           }
         },
         builder: (context, state) {
-          if (state is AbstinenceLoading || state is AbstinenceInitial) {
-            return const Center(
-              child: CircularProgressIndicator(color: Color(kColorPrimary)),
-            );
+          if (state is AbstinenceActive) {
+            return _buildActiveView(context, state);
           }
-          if (state is AbstinenceNoRecord) return _buildNoRecordView(context);
-          if (state is AbstinenceActive) return _buildActiveView(context, state);
-          if (state is AbstinenceError) {
-            return Center(child: Text('错误: ${state.message}'));
-          }
-          return const SizedBox.shrink();
+          return const Center(
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                color: Color(kColorPrimary),
+                strokeWidth: 2,
+              ),
+            ),
+          );
         },
       ),
-      floatingActionButton: const _UrgeFab(),
     );
   }
 
-  Widget _buildNoRecordView(BuildContext context) {
-    return FadeTransition(
-      opacity: _fadeAnim,
-      child: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(kColorPrimary), Color(kColorSecondary)],
-          ),
+  Widget _buildActiveView(BuildContext context, AbstinenceActive state) {
+    final days = state.elapsed.inDays;
+    final progress = (days / state.record.goalDays).clamp(0.0, 1.0);
+
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(0, 8, 0, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildHeader(context),
+            const SizedBox(height: 18),
+
+            // Hero card (dark)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: _buildHeroCard(context, state, days, progress),
+            ),
+
+            const SizedBox(height: 22),
+
+            // Quick actions
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '你今天可以做什么',
+                    style: AppTheme.monoLabel(
+                      color: const Color(kColorTextHint),
+                      fontSize: 11,
+                    ).copyWith(letterSpacing: 0.16),
+                  ),
+                  const SizedBox(height: 10),
+                  _buildQuickActionsGrid(context),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 22),
+
+            // Today's stats
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '今天',
+                    style: AppTheme.monoLabel(
+                      color: const Color(kColorTextHint),
+                      fontSize: 11,
+                    ).copyWith(letterSpacing: 0.16),
+                  ),
+                  const SizedBox(height: 10),
+                  _buildTodayStats(context),
+                ],
+              ),
+            ),
+          ],
         ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(kPaddingLarge),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 16, 0),
+      child: Row(
+        children: [
+          Expanded(
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Spacer(),
-                const Text('🌊', style: TextStyle(fontSize: 96)),
-                const SizedBox(height: 24),
                 Text(
-                  '你不是一个人在战斗',
-                  style: GoogleFonts.nunito(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    letterSpacing: -0.5,
-                  ),
-                  textAlign: TextAlign.center,
+                  _formatDate(),
+                  style: AppTheme.monoLabel(
+                    color: const Color(kColorTextHint),
+                    fontSize: 11,
+                  ).copyWith(letterSpacing: 0.16),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 4),
                 Text(
-                  '科学戒色，从这里开始',
-                  style: GoogleFonts.nunito(
-                    fontSize: 16,
+                  '${_getGreeting()}，$_userName',
+                  style: GoogleFonts.inter(
+                    fontSize: 24,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white.withAlpha(220),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const Spacer(),
-                TactileCard(
-                  backgroundColor: Colors.white,
-                  borderColor: Colors.white,
-                  onTap: () => context
-                      .read<AbstinenceBloc>()
-                      .add(AbstinenceStarted(goalDays: 30)),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 48,
-                    vertical: 20,
-                  ),
-                  child: Text(
-                    '开始 30 天挑战',
-                    style: GoogleFonts.nunito(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: const Color(kColorPrimary),
-                    ),
+                    color: const Color(kColorTextPrimary),
+                    height: 1.2,
+                    letterSpacing: -0.4,
                   ),
                 ),
-                const SizedBox(height: 16),
-                TextButton(
-                  onPressed: () => _showGoalPicker(context),
-                  child: Text(
-                    '自定义时长',
-                    style: GoogleFonts.nunito(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      decoration: TextDecoration.underline,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 32),
               ],
             ),
           ),
+          _buildIconButton(
+            icon: Icons.settings_outlined,
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SettingsPage()),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIconButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: const Color(kColorSurface),
+            border: Border.all(color: const Color(kColorBorder)),
+            shape: BoxShape.circle,
+          ),
+          alignment: Alignment.center,
+          child: Icon(icon, size: 18, color: const Color(kColorTextPrimary)),
         ),
       ),
     );
   }
 
-  void _showGoalPicker(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(kPaddingLarge),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+  Widget _buildHeroCard(
+    BuildContext context,
+    AbstinenceActive state,
+    int days,
+    double progress,
+  ) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(22, 22, 22, 20),
+      decoration: BoxDecoration(
+        color: const Color(kColorTextPrimary),
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '第 $days 天 · 神经恢复进行中',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: Colors.white.withAlpha(153),
+              letterSpacing: 0.08,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            _formatElapsed(state.elapsed),
+            style: GoogleFonts.jetBrainsMono(
+              fontSize: 36,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+              height: 1.0,
+              letterSpacing: -1,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+          const SizedBox(height: 18),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(3),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 6,
+              backgroundColor: Colors.white.withAlpha(31),
+              valueColor: const AlwaysStoppedAnimation(Colors.white),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '选择你的目标',
-                style: GoogleFonts.nunito(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
+                '$days / ${state.record.goalDays}',
+                style: AppTheme.tabularNum(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white.withAlpha(140),
                 ),
               ),
-              const SizedBox(height: 16),
-              for (final days in [7, 14, 30, 60, 90, 100, 180])
-                ListTile(
-                  title: Text('$days 天挑战',
-                      style: GoogleFonts.nunito(fontWeight: FontWeight.w700)),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    context
-                        .read<AbstinenceBloc>()
-                        .add(AbstinenceStarted(goalDays: days));
-                  },
+              Text(
+                _getWeekLabel(days),
+                style: AppTheme.tabularNum(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white.withAlpha(140),
                 ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            '第 $days 天。你还在。这就够了。',
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w400,
+              color: Colors.white.withAlpha(200),
+              height: 1.45,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickActionsGrid(BuildContext context) {
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      mainAxisSpacing: 10,
+      crossAxisSpacing: 10,
+      childAspectRatio: 1.55,
+      children: [
+        _quickCard(
+          context,
+          icon: Icons.bolt,
+          label: '渴望应对',
+          hint: '从此刻到应对 ≤ 3 秒',
+          onTap: () => _openUrge(context),
+        ),
+        _quickCard(
+          context,
+          icon: Icons.chat_bubble_outline,
+          label: 'AI 即时支持',
+          hint: '按你的情境说话',
+          onTap: () => _openAi(context),
+        ),
+        _quickCard(
+          context,
+          icon: Icons.show_chart,
+          label: '进展',
+          hint: '本周 + 全部',
+          onTap: () => _openProgress(context),
+        ),
+        _quickCard(
+          context,
+          icon: Icons.bookmark_outline,
+          label: '记录触发',
+          hint: '留下此刻的线索',
+          onTap: () => _openTrigger(context),
+        ),
+      ],
+    );
+  }
+
+  Widget _quickCard(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required String hint,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(kBorderRadiusLarge),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(kColorSurface),
+            borderRadius: BorderRadius.circular(kBorderRadiusLarge),
+            border: Border.all(color: const Color(kColorBorderSoft)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: const Color(kColorPrimary).withAlpha(36),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                alignment: Alignment.center,
+                child: Icon(
+                  icon,
+                  size: 18,
+                  color: const Color(kColorPrimary),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(kColorTextPrimary),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                hint,
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(kColorTextHint),
+                ),
+              ),
             ],
           ),
         ),
@@ -195,395 +431,90 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildActiveView(BuildContext context, AbstinenceActive state) {
-    final days = state.elapsed.inDays;
-    final milestoneEmoji = _getMilestoneEmoji(days);
-
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(
-          kPaddingLarge,
-          kPaddingMedium,
-          kPaddingLarge,
-          100, // FAB padding
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Top status bar
-            Row(
-              children: [
-                const Text('🔥', style: TextStyle(fontSize: 22)),
-                const SizedBox(width: 8),
-                Text(
-                  '$days 天 · 大脑觉醒中 $milestoneEmoji',
-                  style: GoogleFonts.nunito(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            // Hero number
-            Center(
-              child: StepCounter(
-                number: '$days',
-                label: 'DAYS STRONG',
-                color: const Color(kColorPrimary),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Brain recovery narrative
-            TactileCard(
-              borderColor: const Color(kColorSecondary),
-              child: Row(
-                children: [
-                  const Text('🧠', style: TextStyle(fontSize: 32)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '你的大脑正在恢复',
-                          style: GoogleFonts.nunito(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _getBrainRecoveryMessage(days),
-                          style: GoogleFonts.nunito(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withAlpha(180),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Daily ritual section
-            _buildSectionHeader(context, '☀️ 今日仪式', '3 分钟内完成'),
-            const SizedBox(height: 12),
-            _buildRitualCards(context),
-            const SizedBox(height: 24),
-
-            // Day wall
-            _buildSectionHeader(context, '📅 心情时间墙', '点击格子查看详情'),
-            const SizedBox(height: 12),
-            _buildDayWallSection(context),
-            const SizedBox(height: 24),
-
-            // Recent achievements
-            _buildSectionHeader(context, '🏆 最近成就', '共 ${_achievements.where((a) => a.unlocked).length} / ${_achievements.length}'),
-            const SizedBox(height: 12),
-            _buildAchievementsRow(context),
-            const SizedBox(height: 24),
-
-            // Level/XP
-            _buildLevelSection(context, _userXP),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(BuildContext context, String title, String subtitle) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Text(
-          title,
-          style: GoogleFonts.nunito(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const Spacer(),
-        Text(
-          subtitle,
-          style: GoogleFonts.nunito(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: const Color(kColorTextSecondary),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRitualCards(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: TactileCard(
-            borderColor: const Color(kColorWarning),
-            onTap: () => _showSnackBar(context, '早晨承诺功能开发中'),
-            padding: const EdgeInsets.all(kPaddingMedium),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('☀️', style: TextStyle(fontSize: 32)),
-                const SizedBox(height: 8),
-                Text(
-                  '早晨承诺',
-                  style: GoogleFonts.nunito(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                Text(
-                  '< 10 秒',
-                  style: GoogleFonts.nunito(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(kColorTextSecondary),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: TactileCard(
-            borderColor: const Color(kColorSecondary),
-            onTap: () => _showSnackBar(context, '傍晚回顾功能开发中'),
-            padding: const EdgeInsets.all(kPaddingMedium),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('🌙', style: TextStyle(fontSize: 32)),
-                const SizedBox(height: 8),
-                Text(
-                  '傍晚回顾',
-                  style: GoogleFonts.nunito(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                Text(
-                  '< 2 分钟',
-                  style: GoogleFonts.nunito(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(kColorTextSecondary),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDayWallSection(BuildContext context) {
-    final entries = List.generate(
-      30,
-      (i) => DayEntry(
-        date: DateTime.now().subtract(Duration(days: 29 - i)),
-        moodLevel: ((i * 7) % 5) + 1,
-        hasRecord: i > 5,
-      ),
-    );
-    return TactileCard(
-      child: DayWall(entries: entries),
-    );
-  }
-
-  Widget _buildAchievementsRow(BuildContext context) {
-    final unlocked = _achievements.where((a) => a.unlocked).take(3).toList();
-    final demoUnlocks = <Achievement>[
-      _achievements.firstWhere((a) => a.id == 'day_1'),
-      _achievements.firstWhere((a) => a.id == 'day_7'),
-      _achievements.firstWhere((a) => a.id == 'first_response'),
-    ];
-    final displayList = unlocked.isEmpty ? demoUnlocks : unlocked;
-
-    return Row(
-      children: [
-        for (int i = 0; i < displayList.length; i++) ...[
-          Expanded(child: _buildAchievementBadge(displayList[i])),
-          if (i < displayList.length - 1) const SizedBox(width: 12),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildAchievementBadge(Achievement achievement) {
+  Widget _buildTodayStats(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: achievement.color.withAlpha(30),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(kBorderRadius),
-        border: Border.all(color: achievement.color, width: 2),
+        border: Border.all(color: const Color(kColorBorderSoft)),
       ),
       child: Column(
         children: [
-          Icon(achievement.icon, color: achievement.color, size: 32),
-          const SizedBox(height: 6),
-          Text(
-            achievement.name,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.nunito(
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-              color: achievement.color,
-            ),
-          ),
+          _statRow('早晨承诺', '已完成', isPill: true),
+          const Divider(height: 1, color: Color(kColorBorderSoft)),
+          _statRow('成功应对', '1 次'),
+          const Divider(height: 1, color: Color(kColorBorderSoft)),
+          _statRow('触发记录', '1 次'),
         ],
       ),
     );
   }
 
-  Widget _buildLevelSection(BuildContext context, int xp) {
-    final userLevel = UserLevel.fromXP(xp);
-    return TactileCard(
-      borderColor: const Color(kColorPrimary),
+  Widget _statRow(String label, String value, {bool isPill = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          LevelBadge(level: userLevel.level),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Lv ${userLevel.level} · ${userLevel.title}',
-                  style: GoogleFonts.nunito(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                XpBar(
-                  currentXP: userLevel.currentXP,
-                  nextLevelXP: userLevel.nextLevelXP,
-                  levelTitle: '',
-                ),
-              ],
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: const Color(kColorTextPrimary),
             ),
           ),
+          if (isPill)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(kColorTextMeta).withAlpha(51),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                value,
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(kColorTextSecondary),
+                ),
+              ),
+            )
+          else
+            Text(
+              value,
+              style: AppTheme.tabularNum(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: const Color(kColorTextPrimary),
+              ),
+            ),
         ],
       ),
     );
   }
 
-  String _getMilestoneEmoji(int days) {
-    if (days < 7) return '🌱';
-    if (days < 14) return '🌿';
-    if (days < 30) return '🌸';
-    if (days < 60) return '🌻';
-    if (days < 90) return '🏵️';
-    if (days < 180) return '🌺';
-    return '🌳';
-  }
-
-  String _getBrainRecoveryMessage(int days) {
-    if (days < 1) return '启程 - 你的大脑开始重新校准';
-    if (days < 7) return '多巴胺受体开始适应非人工刺激的节奏';
-    if (days < 14) return '前额叶功能持续改善 - 自控力正在恢复';
-    if (days < 30) return '突触连接重塑中 - 你的意志力在增强';
-    if (days < 90) return '深层神经通路已经重新校准';
-    return '你的大脑已建立新的奖赏回路';
-  }
-
-  void _showRelapsePage(BuildContext context, AbstinenceJustRelapsed state) {
+  void _openUrge(BuildContext context) {
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => RelapseSupportPage(
-          previousRecord: state.previousRecord,
-          previousDays: state.previousDays,
-        ),
-      ),
+      MaterialPageRoute(builder: (_) => const UrgePanelPage()),
     );
   }
 
-  void _showSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: GoogleFonts.nunito(fontWeight: FontWeight.w700)),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(kBorderRadius),
-        ),
-      ),
-    );
-  }
-}
-
-class _UrgeFab extends StatefulWidget {
-  const _UrgeFab();
-
-  @override
-  State<_UrgeFab> createState() => _UrgeFabState();
-}
-
-class _UrgeFabState extends State<_UrgeFab>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-  late Animation<double> _scale;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat(reverse: true);
-    _scale = Tween(begin: 1.0, end: 1.06).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+  void _openAi(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const AiSupportPage()),
     );
   }
 
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
+  void _openProgress(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ProgressPage()),
+    );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return ScaleTransition(
-      scale: _scale,
-      child: FloatingActionButton.extended(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => BlocProvider.value(
-              value: context.read<AbstinenceBloc>(),
-              child: const UrgePanelPage(),
-            ),
-          ),
-        ),
-        backgroundColor: const Color(kColorPrimary),
-        foregroundColor: Colors.white,
-        elevation: 8,
-        icon: const Icon(Icons.bolt, size: 24),
-        label: Text(
-          '渴望',
-          style: GoogleFonts.nunito(
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ),
+  void _openTrigger(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const TriggerLogPage()),
     );
   }
 }
