@@ -2,12 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../constants/app_constants.dart';
 
-/// V2.0 Theme - Lingo Design System
-/// Reference: https://open-design.ai/plugins/design-system-lingo/
+/// V3.0 Theme - Designer-provided Apple aesthetic
+/// Reference: doc/design/20260705/HTML/*.html
+///
+/// Uses Inter as SF Pro Display alternative (Google Fonts)
+/// - Calm, warm, premium feel
+/// - No gamification, no celebration animations
+/// - Editorial typography hierarchy
 class AppTheme {
   AppTheme._();
 
-  /// Build Nunito-based text theme with optional brightness
+  /// Build Inter-based text theme with optional brightness
   static TextTheme _buildTextTheme(Brightness brightness) {
     final baseTextTheme = brightness == Brightness.dark
         ? ThemeData(brightness: Brightness.dark).textTheme
@@ -20,95 +25,140 @@ class AppTheme {
     final secondary = isDark
         ? const Color(kColorDarkTextSecondary)
         : const Color(kColorTextSecondary);
+    final muted = isDark
+        ? const Color(kColorDarkTextHint)
+        : const Color(kColorTextHint);
 
-    return GoogleFonts.nunitoTextTheme(baseTextTheme).copyWith(
-      displayLarge: GoogleFonts.nunito(
-        fontSize: 72,
-        fontWeight: FontWeight.w900,
+    final interTextTheme = GoogleFonts.interTextTheme(baseTextTheme);
+
+    return interTextTheme.copyWith(
+      displayLarge: GoogleFonts.inter(
+        fontSize: 48,
+        fontWeight: FontWeight.w600,
         color: primary,
-        height: 1.0,
-        letterSpacing: -2,
-      ),
-      displayMedium: GoogleFonts.nunito(
-        fontSize: 56,
-        fontWeight: FontWeight.w900,
-        color: primary,
-        height: 1.0,
         letterSpacing: -1.5,
-      ),
-      displaySmall: GoogleFonts.nunito(
-        fontSize: 44,
-        fontWeight: FontWeight.w800,
-        color: primary,
         height: 1.05,
-        letterSpacing: -1,
       ),
-      headlineLarge: GoogleFonts.nunito(
-        fontSize: 32,
-        fontWeight: FontWeight.w800,
+      displayMedium: GoogleFonts.inter(
+        fontSize: 36,
+        fontWeight: FontWeight.w600,
         color: primary,
+        letterSpacing: -0.8,
+        height: 1.1,
+      ),
+      displaySmall: GoogleFonts.inter(
+        fontSize: 28,
+        fontWeight: FontWeight.w600,
+        color: primary,
+        letterSpacing: -0.5,
+        height: 1.15,
+      ),
+      headlineLarge: GoogleFonts.inter(
+        fontSize: 24,
+        fontWeight: FontWeight.w600,
+        color: primary,
+        letterSpacing: -0.4,
         height: 1.2,
       ),
-      headlineMedium: GoogleFonts.nunito(
-        fontSize: 24,
-        fontWeight: FontWeight.w800,
+      headlineMedium: GoogleFonts.inter(
+        fontSize: 19,
+        fontWeight: FontWeight.w600,
         color: primary,
-        height: 1.3,
+        letterSpacing: -0.2,
+        height: 1.25,
       ),
-      headlineSmall: GoogleFonts.nunito(
-        fontSize: 20,
-        fontWeight: FontWeight.w700,
+      headlineSmall: GoogleFonts.inter(
+        fontSize: 17,
+        fontWeight: FontWeight.w600,
         color: primary,
+        letterSpacing: -0.1,
       ),
-      titleLarge: GoogleFonts.nunito(
-        fontSize: 18,
-        fontWeight: FontWeight.w800,
-        color: primary,
-      ),
-      titleMedium: GoogleFonts.nunito(
-        fontSize: 16,
-        fontWeight: FontWeight.w700,
+      titleLarge: GoogleFonts.inter(
+        fontSize: 17,
+        fontWeight: FontWeight.w600,
         color: primary,
       ),
-      titleSmall: GoogleFonts.nunito(
-        fontSize: 14,
-        fontWeight: FontWeight.w700,
+      titleMedium: GoogleFonts.inter(
+        fontSize: 15,
+        fontWeight: FontWeight.w600,
         color: primary,
       ),
-      bodyLarge: GoogleFonts.nunito(
-        fontSize: 16,
-        fontWeight: FontWeight.w500,
+      titleSmall: GoogleFonts.inter(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
         color: primary,
-        height: 1.55,
       ),
-      bodyMedium: GoogleFonts.nunito(
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
+      bodyLarge: GoogleFonts.inter(
+        fontSize: 15,
+        fontWeight: FontWeight.w400,
+        color: primary,
+        height: 1.5,
+      ),
+      bodyMedium: GoogleFonts.inter(
+        fontSize: 13,
+        fontWeight: FontWeight.w400,
         color: secondary,
         height: 1.5,
       ),
-      bodySmall: GoogleFonts.nunito(
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-        color: secondary,
+      bodySmall: GoogleFonts.inter(
+        fontSize: 11,
+        fontWeight: FontWeight.w400,
+        color: muted,
         height: 1.4,
       ),
-      labelLarge: GoogleFonts.nunito(
-        fontSize: 14,
-        fontWeight: FontWeight.w700,
+      labelLarge: GoogleFonts.inter(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
         color: primary,
       ),
-      labelMedium: GoogleFonts.nunito(
-        fontSize: 12,
-        fontWeight: FontWeight.w700,
-        color: primary,
-      ),
-      labelSmall: GoogleFonts.nunito(
-        fontSize: 10,
-        fontWeight: FontWeight.w700,
+      labelMedium: GoogleFonts.inter(
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
         color: secondary,
-        letterSpacing: 1.0,
       ),
+      labelSmall: GoogleFonts.inter(
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+        color: muted,
+        letterSpacing: 0.08,
+      ),
+    );
+  }
+
+  /// Mono font for technical labels (greetings, eyebrows, meta)
+  static TextStyle _monoStyle({
+    required double fontSize,
+    required FontWeight fontWeight,
+    required Color color,
+    double letterSpacing = 0.12,
+  }) {
+    return GoogleFonts.jetBrainsMono(
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+      color: color,
+      letterSpacing: letterSpacing,
+    );
+  }
+
+  /// Static mono style getter (used in screens)
+  static TextStyle monoLabel({required Color color, double fontSize = 11}) =>
+      _monoStyle(
+        fontSize: fontSize,
+        fontWeight: FontWeight.w500,
+        color: color,
+      );
+
+  /// Tabular nums for numbers
+  static TextStyle tabularNum({
+    required double fontSize,
+    required FontWeight fontWeight,
+    required Color color,
+  }) {
+    return GoogleFonts.jetBrainsMono(
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+      color: color,
+      fontFeatures: const [FontFeature.tabularFigures()],
     );
   }
 
@@ -118,13 +168,11 @@ class AppTheme {
       brightness: Brightness.light,
       colorScheme: const ColorScheme.light(
         primary: Color(kColorPrimary),
-        secondary: Color(kColorSecondary),
-        tertiary: Color(kColorAccent),
+        secondary: Color(kColorPrimary),
         surface: Color(kColorSurface),
-        error: Color(kColorError),
+        error: Color(kColorDanger),
         onPrimary: Color(kColorTextOnPrimary),
-        onSecondary: Colors.white,
-        onTertiary: Colors.white,
+        onSecondary: Color(kColorTextOnPrimary),
         onSurface: Color(kColorTextPrimary),
       ),
       scaffoldBackgroundColor: const Color(kColorBackground),
@@ -133,11 +181,13 @@ class AppTheme {
         backgroundColor: const Color(kColorBackground),
         foregroundColor: const Color(kColorTextPrimary),
         elevation: 0,
+        scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: GoogleFonts.nunito(
-          fontSize: 20,
-          fontWeight: FontWeight.w800,
+        titleTextStyle: GoogleFonts.inter(
+          fontSize: 17,
+          fontWeight: FontWeight.w600,
           color: const Color(kColorTextPrimary),
+          letterSpacing: -0.1,
         ),
         iconTheme: const IconThemeData(color: Color(kColorTextPrimary)),
       ),
@@ -146,7 +196,7 @@ class AppTheme {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(kBorderRadiusLarge),
-          side: const BorderSide(color: Color(0xFFEAEAEA), width: 1.5),
+          side: const BorderSide(color: Color(kColorBorder), width: 1),
         ),
         margin: EdgeInsets.zero,
       ),
@@ -155,111 +205,95 @@ class AppTheme {
           backgroundColor: const Color(kColorPrimary),
           foregroundColor: Colors.white,
           elevation: 0,
-          minimumSize: const Size(double.infinity, kMinButtonHeight),
+          minimumSize: const Size(double.infinity, 48),
           padding: const EdgeInsets.symmetric(
-            horizontal: kPaddingLarge,
-            vertical: kPaddingMedium,
+            horizontal: 20,
+            vertical: 14,
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(kBorderRadius),
           ),
-          textStyle: GoogleFonts.nunito(
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.3,
+          textStyle: GoogleFonts.inter(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: const Color(kColorPrimary),
-          side: const BorderSide(color: Color(kColorPrimary), width: 2),
+          foregroundColor: const Color(kColorTextPrimary),
+          side: const BorderSide(color: Color(kColorBorder), width: 1),
           elevation: 0,
-          minimumSize: const Size(double.infinity, kMinButtonHeight),
+          minimumSize: const Size(double.infinity, 48),
           padding: const EdgeInsets.symmetric(
-            horizontal: kPaddingLarge,
-            vertical: kPaddingMedium,
+            horizontal: 20,
+            vertical: 14,
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(kBorderRadius),
           ),
-          textStyle: GoogleFonts.nunito(
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.3,
+          textStyle: GoogleFonts.inter(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: const Color(kColorPrimary),
-          minimumSize: const Size(48, kMinTouchTarget),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(kBorderRadius),
-          ),
-          textStyle: GoogleFonts.nunito(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
+          minimumSize: const Size(44, 44),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          textStyle: GoogleFonts.inter(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(kColorSurfaceAlt),
+        fillColor: const Color(kColorSurface),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(kBorderRadius),
-          borderSide: BorderSide.none,
+          borderSide: const BorderSide(color: Color(kColorBorder), width: 1),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(kBorderRadius),
-          borderSide: BorderSide.none,
+          borderSide: const BorderSide(color: Color(kColorBorder), width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(kBorderRadius),
           borderSide: const BorderSide(color: Color(kColorPrimary), width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: kPaddingMedium,
-          vertical: kPaddingMedium,
+          horizontal: 14,
+          vertical: 14,
         ),
-        hintStyle: GoogleFonts.nunito(
+        hintStyle: GoogleFonts.inter(
           color: const Color(kColorTextHint),
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w400,
         ),
       ),
       sliderTheme: const SliderThemeData(
         activeTrackColor: Color(kColorPrimary),
-        inactiveTrackColor: Color(0xFFD8F5C8),
+        inactiveTrackColor: Color(0xFFE3D9C4),
         thumbColor: Color(kColorPrimary),
-        overlayColor: Color(0x3358CC02),
-        trackHeight: 8,
+        overlayColor: Color(0x330071E3),
+        trackHeight: 4,
         thumbShape: RoundSliderThumbShape(
-          enabledThumbRadius: 14,
-          elevation: 4,
-        ),
-      ),
-      chipTheme: ChipThemeData(
-        backgroundColor: const Color(kColorPrimaryLight),
-        selectedColor: const Color(kColorPrimary),
-        labelStyle: GoogleFonts.nunito(
-          fontWeight: FontWeight.w700,
-          color: const Color(kColorPrimary),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(kBorderRadiusPill),
+          enabledThumbRadius: 10,
+          elevation: 2,
         ),
       ),
       dividerTheme: DividerThemeData(
-        color: const Color(kColorTextHint).withAlpha(51),
+        color: const Color(kColorBorderSoft),
         thickness: 1,
+        space: 1,
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: const Color(kColorPrimary),
-        contentTextStyle: GoogleFonts.nunito(
+        backgroundColor: const Color(kColorTextPrimary),
+        contentTextStyle: GoogleFonts.inter(
           color: Colors.white,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w500,
         ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(kBorderRadius),
@@ -267,34 +301,26 @@ class AppTheme {
         behavior: SnackBarBehavior.floating,
       ),
       bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: Color(kColorSurface),
+        backgroundColor: Color(kColorBackground),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(
-            top: Radius.circular(kBorderRadiusXLarge),
+            top: Radius.circular(kBorderRadiusLarge),
           ),
         ),
       ),
       dialogTheme: DialogTheme(
-        backgroundColor: const Color(kColorSurface),
-        elevation: 8,
+        backgroundColor: const Color(kColorBackground),
+        elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(kBorderRadiusLarge),
         ),
       ),
-      bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: const Color(kColorSurface),
-        selectedItemColor: const Color(kColorPrimary),
-        unselectedItemColor: const Color(kColorTextHint),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: Color(kColorBackground),
+        selectedItemColor: Color(kColorPrimary),
+        unselectedItemColor: Color(kColorTextHint),
         type: BottomNavigationBarType.fixed,
         elevation: 0,
-        selectedLabelStyle: GoogleFonts.nunito(
-          fontSize: 12,
-          fontWeight: FontWeight.w800,
-        ),
-        unselectedLabelStyle: GoogleFonts.nunito(
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-        ),
       ),
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
@@ -311,13 +337,11 @@ class AppTheme {
       brightness: Brightness.dark,
       colorScheme: const ColorScheme.dark(
         primary: Color(kColorPrimary),
-        secondary: Color(kColorSecondary),
-        tertiary: Color(kColorAccent),
+        secondary: Color(kColorPrimary),
         surface: Color(kColorDarkSurface),
-        error: Color(kColorError),
-        onPrimary: Colors.white,
-        onSecondary: Colors.white,
-        onTertiary: Colors.white,
+        error: Color(kColorDanger),
+        onPrimary: Color(kColorTextOnPrimary),
+        onSecondary: Color(kColorTextOnPrimary),
         onSurface: Color(kColorDarkTextPrimary),
       ),
       scaffoldBackgroundColor: const Color(kColorDarkBackground),
@@ -327,9 +351,9 @@ class AppTheme {
         foregroundColor: const Color(kColorDarkTextPrimary),
         elevation: 0,
         centerTitle: false,
-        titleTextStyle: GoogleFonts.nunito(
-          fontSize: 20,
-          fontWeight: FontWeight.w800,
+        titleTextStyle: GoogleFonts.inter(
+          fontSize: 17,
+          fontWeight: FontWeight.w600,
           color: const Color(kColorDarkTextPrimary),
         ),
       ),
@@ -338,7 +362,7 @@ class AppTheme {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(kBorderRadiusLarge),
-          side: const BorderSide(color: Color(0xFF3A3B4A), width: 1.5),
+          side: const BorderSide(color: Color(kColorDarkBorder), width: 1),
         ),
         margin: EdgeInsets.zero,
       ),
@@ -347,72 +371,22 @@ class AppTheme {
           backgroundColor: const Color(kColorPrimary),
           foregroundColor: Colors.white,
           elevation: 0,
-          minimumSize: const Size(double.infinity, kMinButtonHeight),
-          padding: const EdgeInsets.symmetric(
-            horizontal: kPaddingLarge,
-            vertical: kPaddingMedium,
-          ),
+          minimumSize: const Size(double.infinity, 48),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(kBorderRadius),
           ),
-          textStyle: GoogleFonts.nunito(
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
+          textStyle: GoogleFonts.inter(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: const Color(kColorPrimary),
-          side: const BorderSide(color: Color(kColorPrimary), width: 2),
-          elevation: 0,
-          minimumSize: const Size(double.infinity, kMinButtonHeight),
-          padding: const EdgeInsets.symmetric(
-            horizontal: kPaddingLarge,
-            vertical: kPaddingMedium,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(kBorderRadius),
-          ),
-          textStyle: GoogleFonts.nunito(
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: const Color(kColorDarkSurfaceAlt),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(kBorderRadius),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(kBorderRadius),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(kBorderRadius),
-          borderSide: const BorderSide(color: Color(kColorPrimary), width: 2),
-        ),
-      ),
-      bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: const Color(kColorDarkSurface),
-        selectedItemColor: const Color(kColorPrimary),
-        unselectedItemColor: const Color(kColorDarkTextSecondary),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: Color(kColorDarkSurface),
+        selectedItemColor: Color(kColorPrimary),
+        unselectedItemColor: Color(kColorDarkTextHint),
         type: BottomNavigationBarType.fixed,
         elevation: 0,
-      ),
-      snackBarTheme: SnackBarThemeData(
-        backgroundColor: const Color(kColorDarkSurface),
-        contentTextStyle: GoogleFonts.nunito(
-          color: const Color(kColorDarkTextPrimary),
-          fontWeight: FontWeight.w700,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(kBorderRadius),
-        ),
-        behavior: SnackBarBehavior.floating,
       ),
     );
   }

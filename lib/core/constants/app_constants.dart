@@ -1,88 +1,67 @@
 /// App-wide constants for 清流 (Qingliu)
-/// V2.0 - Lingo Design System palette
+/// V3.0 - Designer-provided Apple aesthetic
+/// (replaces Lingo/Gamified V2.0 direction)
 library;
 
 /// App metadata
 const String kAppName = '清流';
 const String kAppNameEn = 'Qingliu';
-const String kAppVersion = '2.0.0';
-const int kBuildNumber = 2;
+const String kAppVersion = '3.0.0';
+const int kBuildNumber = 3;
 
 /// ============================================================================
-/// Lingo Design System Color Palette
-/// 参考: https://open-design.ai/plugins/design-system-lingo/
-/// 核心理念：游戏化、活力、成长、年轻
+/// Apple-style Color Palette
+/// Reference: doc/design/20260705/HTML/*.html
+/// 核心理念：克制、温暖、成熟、不评判
 /// ============================================================================
 
-/// Primary - Duolingo Green (进步、活力、成长)
-const int kColorPrimary = 0xFF58CC02;
-const int kColorPrimaryDark = 0xFF46A601;
-const int kColorPrimaryLight = 0xFFE9FAD9;
+/// Background colors - warm cream
+const int kColorBackground = 0xFFFBF8F1;       // 主背景 - 暖奶白
+const int kColorSurface = 0xFFF3ECE0;          // 卡片背景
+const int kColorSurfaceWarm = 0xFFF8F2E6;      // 暖卡片
+const int kColorSurfaceAlt = 0xFFEFE7D8;       // 交替背景
 
-/// Secondary - Lavender Purple (平静、专注)
-const int kColorSecondary = 0xFFCE82FF;
-const int kColorSecondaryDark = 0xFFA65AE8;
-const int kColorSecondaryLight = 0xFFF3E5FF;
+/// Text colors - warm dark
+const int kColorTextPrimary = 0xFF2C2620;      // 主文字
+const int kColorTextSecondary = 0xFF5A544A;    // 次要文字
+const int kColorTextHint = 0xFF8B7E6E;         // 提示文字
+const int kColorTextMeta = 0xFFA99C8A;         // 元信息
+const int kColorTextOnPrimary = 0xFFFFFFFF;    // 主色上文字
 
-/// Accent - Fresh Teal (保留作为过渡强调)
-const int kColorAccent = 0xFF00D4AA;
-const int kColorAccentDark = 0xFF00B894;
-const int kColorAccentLight = 0xFFB8F4E0;
+/// Border colors
+const int kColorBorder = 0xFFE3D9C4;
+const int kColorBorderSoft = 0xFFEBE3D0;
 
-/// Warning - Bright Yellow (能量、提示)
-const int kColorWarning = 0xFFFFC800;
-const int kColorWarningDark = 0xFFE6B400;
+/// Accent - Apple Blue
+const int kColorPrimary = 0xFF0071E3;          // Apple 蓝
+const int kColorPrimaryHover = 0xFF0077ED;
+const int kColorPrimaryActive = 0xFF0066CC;
 
-/// Danger - Bright Red (警示、紧迫)
-const int kColorDanger = 0xFFFF4B4B;
-const int kColorError = 0xFFFF4B4B;
+/// Semantic
+const int kColorSuccess = 0xFF16A34A;
+const int kColorWarning = 0xFFEAB308;
+const int kColorDanger = 0xFFDC2626;
 
-/// Info - Cool Blue (理性、科学)
-const int kColorInfo = 0xFF5B6CFF;
-const int kColorSuccess = 0xFF22A06B;
-
-/// Background colors
-const int kColorBackground = 0xFFFAFAFA;
-const int kColorSurface = 0xFFFFFFFF;
-const int kColorSurfaceAlt = 0xFFF7F7F7;
-
-/// Text colors
-const int kColorTextPrimary = 0xFF3C3C3C;
-const int kColorTextSecondary = 0xFF6B6B6B;
-const int kColorTextHint = 0xFF9CA3AF;
-const int kColorTextOnPrimary = 0xFFFFFFFF;
-
-/// Gradient definitions (Lingo inspired)
-const List<int> kGradientPrimary = [0xFF58CC02, 0xFF7BE325];
-const List<int> kGradientAccent = [0xFFCE82FF, 0xFFA65AE8];
-const List<int> kGradientCool = [0xFF667EEA, 0xFF764BA2];
-const List<int> kGradientWarm = [0xFFFF8C42, 0xFFFFC800];
-
-/// Shadow / 3D elevation
-const int kShadowColor = 0x14000000;          // 8% black
-const int kShadowColorLight = 0x0D000000;
-const int kShadowColorMedium = 0x26000000;
-const int kShadowColorGreen = 0x2E58CC02;     // 18% primary - for green glow
-
-/// Dark mode colors
-const int kColorDarkBackground = 0xFF1A1B2A;
-const int kColorDarkSurface = 0xFF252736;
-const int kColorDarkSurfaceAlt = 0xFF2F3142;
-const int kColorDarkTextPrimary = 0xFFF5F5F7;
-const int kColorDarkTextSecondary = 0xFFA0A0AC;
-const int kColorDarkTextHint = 0xFF6B6B7B;
+/// Dark mode colors (warm dark)
+const int kColorDarkBackground = 0xFF1C1916;
+const int kColorDarkSurface = 0xFF292524;
+const int kColorDarkSurfaceAlt = 0xFF34302D;
+const int kColorDarkTextPrimary = 0xFFF5F5F4;
+const int kColorDarkTextSecondary = 0xFFA8A29E;
+const int kColorDarkTextHint = 0xFF78716C;
+const int kColorDarkBorder = 0xFF3A3530;
 
 /// ============================================================================
-/// Mood color scale (5 levels for mood tracking / DayWall)
+/// Mood color scale (kept for DayWall)
 /// ============================================================================
 const List<int> kMoodColors = [
-  0xFFFF4B4B, // 1 - 很差 (红)
-  0xFFFF8C42, // 2 - 不好 (橙)
-  0xFFFFC800, // 3 - 一般 (黄)
-  0xFF58CC02, // 4 - 好 (绿)
-  0xFFCE82FF, // 5 - 非常好 (紫)
+  0xFFDC2626, // 1 - 红
+  0xFFEAB308, // 2 - 黄
+  0xFF8B7E6E, // 3 - 灰
+  0xFF16A34A, // 4 - 绿
+  0xFF0071E3, // 5 - 蓝
 ];
-const List<String> kMoodEmojis = ['😢', '😟', '😐', '😊', '🔥'];
+const List<String> kMoodEmojis = ['😢', '😟', '😐', '😊', '✨'];
 
 /// ============================================================================
 /// Neural Recovery Descriptions - 神经恢复描述（科学叙事）
@@ -96,11 +75,11 @@ const Map<int, String> kNeuralRecoveryDescriptions = {
   21: '自我效能感建立窗口期',
   30: '神经递质水平初步恢复基线',
   60: '多巴胺受体密度开始增加',
-  90: '神经系统的恢复进程持续进行（多巴胺受体恢复需要约90天）',
+  90: '神经系统的恢复进程持续进行',
 };
 
 /// ============================================================================
-/// Milestones - 里程碑
+/// Milestones
 /// ============================================================================
 const List<int> kMilestones = [7, 14, 30, 60, 90, 180, 365];
 const Map<int, String> kMilestoneNames = {
@@ -123,7 +102,7 @@ const Map<int, String> kMilestoneEmojis = {
 };
 
 /// ============================================================================
-/// XP/Level system
+/// XP/Level system (kept for compatibility)
 /// ============================================================================
 const List<int> kLevelThresholds = [
   0, 100, 300, 600, 1000, 1500, 2100, 2800, 3600, 4500, 5500,
@@ -133,7 +112,6 @@ const List<String> kLevelTitles = [
   '战士', '勇者', '大师', '传奇', '神话', '不朽',
 ];
 
-/// XP rewards
 const int kXPDailyCheckIn = 20;
 const int kXPUrgeResisted = 50;
 const int kXPTechniqueComplete = 30;
@@ -150,21 +128,13 @@ const int kDefaultUrgeLevel = 5;
 const int kMinUrgeLevel = 1;
 const int kMaxUrgeLevel = 10;
 
-/// Risk period thresholds
 const int kHighRiskSoloHours = 2;
 const int kHighRiskHourStart = 1;
 const int kHighRiskHourEnd = 5;
 const int kTriggerComboThreshold = 3;
 
-/// Trigger emotion types
 const List<String> kTriggerEmotions = [
-  '无聊',
-  '压力大',
-  '孤独',
-  '焦虑',
-  '看见诱因',
-  '睡前',
-  '其他',
+  '无聊', '压力大', '孤独', '焦虑', '看见诱因', '睡前', '其他',
 ];
 
 /// Storage keys
@@ -178,41 +148,33 @@ const String kStorageLocale = 'locale';
 const String kStorageXP = 'user_xp';
 const String kStorageAchievements = 'achievements';
 const String kStorageMoodEntries = 'mood_entries';
+const String kStorageUserName = 'user_name';
 
 /// ============================================================================
-/// Animation durations (Lingo-style: short, purposeful)
+/// Animation (Apple-style: 220ms standard)
 /// ============================================================================
-const int kAnimDurationMs = 230;          // Lingo --motion-base
-const int kAnimDurationFastMs = 150;      // Lingo --motion-fast
+const int kAnimDurationMs = 220;
+const int kAnimDurationFastMs = 150;
 const int kAnimDurationSlowMs = 400;
-const int kAnimDurationCelebrationMs = 1500;
 
 /// ============================================================================
-/// UI dimensions - 统一圆角系统 (Lingo: rounded, tactile)
+/// UI dimensions - Apple-style radii
 /// ============================================================================
-const double kBorderRadius = 16.0;
-const double kBorderRadiusSmall = 10.0;
-const double kBorderRadiusLarge = 24.0;
-const double kBorderRadiusXLarge = 32.0;
-const double kBorderRadiusPill = 9999.0;
+const double kBorderRadius = 14.0;           // --radius-md
+const double kBorderRadiusSmall = 8.0;       // --radius-sm
+const double kBorderRadiusLarge = 18.0;      // --radius-lg
+const double kBorderRadiusXLarge = 28.0;
+const double kBorderRadiusPill = 980.0;      // --radius-pill
 const double kPaddingSmall = 8.0;
 const double kPaddingMedium = 16.0;
-const double kPaddingLarge = 24.0;
-const double kPaddingXLarge = 32.0;
+const double kPaddingLarge = 20.0;
+const double kPaddingXLarge = 28.0;
 const double kSafeAreaBottom = 34.0;
 
-/// 3D border thickness for tactile effect
-const double kBorderWidth3D = 2.0;
-const double kBorderWidth3DThick = 3.0;
+/// Touch targets
+const double kMinButtonHeight = 48.0;
+const double kMinTouchTarget = 44.0;
 
-/// ============================================================================
-/// Touch target sizes - 手指友好尺寸
-/// ============================================================================
-const double kMinButtonHeight = 56.0;
-const double kMinTouchTarget = 48.0;
-
-/// ============================================================================
-/// DayWall - mood timeline grid
-/// ============================================================================
+/// DayWall
 const int kDayWallDays = 30;
 const int kDayWallColumns = 7;
