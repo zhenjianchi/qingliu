@@ -64,7 +64,7 @@ class _HomePageState extends State<HomePage> {
     final hours = d.inHours.remainder(24);
     final mins = d.inMinutes.remainder(60);
     final secs = d.inSeconds.remainder(60);
-    return '${days}天 ${hours.toString().padLeft(2, '0')}:${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+    return '${hours.toString().padLeft(2, '0')}:${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
   }
 
   String _getWeekLabel(int days) {
@@ -271,14 +271,40 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                '$days',
+                style: GoogleFonts.jetBrainsMono(
+                  fontSize: 64,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                  height: 1.0,
+                  letterSpacing: -3,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '天',
+                style: GoogleFonts.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white.withAlpha(150),
+                ),
+              ),
+            ],
+          ),
           Text(
             _formatElapsed(state.elapsed),
             style: GoogleFonts.jetBrainsMono(
-              fontSize: 36,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
+              fontSize: 28,
+              fontWeight: FontWeight.w500,
+              color: Colors.white.withAlpha(204),
               height: 1.0,
-              letterSpacing: -1,
+              letterSpacing: -0.5,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
@@ -287,7 +313,7 @@ class _HomePageState extends State<HomePage> {
             borderRadius: BorderRadius.circular(3),
             child: LinearProgressIndicator(
               value: progress,
-              minHeight: 6,
+              minHeight: 4,
               backgroundColor: Colors.white.withAlpha(31),
               valueColor: const AlwaysStoppedAnimation(Colors.white),
             ),

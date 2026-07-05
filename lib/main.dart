@@ -11,6 +11,7 @@ import 'presentation/pages/home_page.dart';
 import 'presentation/pages/onboarding/splash_page.dart';
 import 'presentation/pages/progress_page.dart';
 import 'presentation/pages/settings_page.dart';
+import 'presentation/pages/urge_panel_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -135,6 +136,7 @@ class _MainShellState extends State<MainShell> {
 
   final _pages = const [
     HomePage(),
+    UrgePanelPage(),
     ProgressPage(),
     SettingsPage(),
   ];
@@ -158,13 +160,14 @@ class _MainShellState extends State<MainShell> {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildNavItem(0, Icons.home_outlined, Icons.home, '首页'),
-                _buildNavItem(1, Icons.bar_chart_outlined, Icons.bar_chart, '进展'),
-                _buildNavItem(2, Icons.settings_outlined, Icons.settings, '设置'),
+                _buildNavItem(0, Icons.home_outlined, Icons.home, '今日'),
+                _buildNavItem(1, Icons.bolt_outlined, Icons.bolt, '渴望'),
+                _buildNavItem(2, Icons.bar_chart_outlined, Icons.bar_chart, '进展'),
+                _buildNavItem(3, Icons.settings_outlined, Icons.settings, '我的'),
               ],
             ),
           ),
@@ -179,7 +182,7 @@ class _MainShellState extends State<MainShell> {
       onTap: () => setState(() => _currentIndex = index),
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

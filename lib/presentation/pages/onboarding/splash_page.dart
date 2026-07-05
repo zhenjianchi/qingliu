@@ -77,11 +77,15 @@ class _SplashBrandState extends State<_SplashBrand>
             animation: _ctrl,
             builder: (context, _) {
               return Container(
-                width: 124,
-                height: 124,
+                width: 60,
+                height: 60,
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(kColorSurfaceWarm),
+                  borderRadius: BorderRadius.circular(14),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFFA07655), Color(0xFFC96442)],
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: const Color(0x448B6B46),
@@ -95,10 +99,11 @@ class _SplashBrandState extends State<_SplashBrand>
                 child: Text(
                   '清',
                   style: GoogleFonts.inter(
-                    fontSize: 64,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(kColorTextPrimary),
+                    fontSize: 32,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
                     height: 1.0,
+                    letterSpacing: -1,
                   ),
                 ),
               );
@@ -107,11 +112,12 @@ class _SplashBrandState extends State<_SplashBrand>
           const SizedBox(height: 24),
           Text(
             '清流',
-            style: AppTheme.tabularNum(
+            style: GoogleFonts.inter(
               fontSize: 36,
               fontWeight: FontWeight.w600,
               color: const Color(kColorTextPrimary),
-            ).copyWith(letterSpacing: -0.5),
+              letterSpacing: -0.5,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -125,7 +131,7 @@ class _SplashBrandState extends State<_SplashBrand>
           ),
           const SizedBox(height: 18),
           Text(
-            'V1.0 · 本产品不替代专业心理咨询',
+            'v1.0 · 本产品不替代专业心理咨询',
             style: AppTheme.monoLabel(
               color: const Color(kColorTextMeta),
               fontSize: 10,

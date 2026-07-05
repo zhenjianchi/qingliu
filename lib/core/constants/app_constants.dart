@@ -50,7 +50,7 @@ const int kColorAccentDark = 0xFF0066CC;
 const int kColorAccentLight = 0xFFE9FAD9;
 
 /// Semantic
-const int kColorSuccess = 0xFF16A34A;
+const int kColorSuccess = 0xFF7BA576;       // Muted sage green (iOS Settings toggle)
 const int kColorWarning = 0xFFEAB308;
 const int kColorDanger = 0xFFDC2626;
 const int kColorError = 0xFFDC2626;
