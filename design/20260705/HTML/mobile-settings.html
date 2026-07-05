@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>清流 · 设置页（iOS + Android）</title>
+  <style>
+    :root {
+      --bg: #fbf8f1; --surface: #f3ece0; --surface-warm: #f8f2e6;
+      --fg: #2c2620; --fg-2: #5a544a; --muted: #8b7e6e; --meta: #a99c8a;
+      --border: #e3d9c4; --border-soft: #ebe3d0;
+      --accent: #0071e3; --accent-on: #ffffff;
+      --success: #16a34a; --danger: #dc2626;
+      --font-display: "SF Pro Display","SF Pro Icons","Helvetica Neue",Helvetica,Arial,sans-serif;
+      --font-body: "SF Pro Text","SF Pro Icons","Helvetica Neue",Helvetica,Arial,sans-serif;
+      --font-mono: "SF Mono",ui-monospace,Menlo,monospace;
+      --leading-body: 1.4; --tracking-display: -0.015em;
+      --radius-sm: 8px; --radius-md: 14px; --radius-lg: 18px; --radius-pill: 980px;
+      --motion-base: 220ms; --ease-standard: cubic-bezier(0.28, 0, 0.22, 1);
+      --fs-body: 15px; --fs-sm: 13px; --fs-xs: 11px;
+    }
+    *,*::before,*::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      font-size: var(--fs-body);
+      line-height: 1.5;
+      color: var(--fg);
+      background:
+        radial-gradient(80% 50% at 50% -8%, color-mix(in oklab, var(--accent) 6%, var(--bg)) 0%, var(--bg) 70%),
+        var(--bg);
+      -webkit-font-smoothing: antialiased;
+      letter-spacing: -0.005em;
+    }
+    .page-top { max-width: 1480px; margin: 0 auto; padding: 32px 28px 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .page-top .crumbs { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+    .page-top .crumbs strong { color: var(--fg); font-weight: 600; }
+    .page-top .back { color: var(--accent); font-size: 14px; display: inline-flex; align-items: center; gap: 4px; }
+    .page-top .back svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+    .head { max-width: 1480px; margin: 0 auto; padding: 36px 28px 16px; }
+    .head .eyebrow { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin: 0 0 14px; }
+    .head h1 { font-family: var(--font-display); font-size: clamp(34px, 5vw, 48px); font-weight: 600; letter-spacing: var(--tracking-display); line-height: 1.06; margin: 0 0 14px; }
+    .head .lede { max-width: 64ch; color: var(--fg-2); font-size: 17px; line-height: 1.55; margin: 0; }
+
+    .stage-pair { max-width: 1480px; margin: 0 auto; padding: 0 28px 80px; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: start; justify-items: center; }
+    @media (max-width: 1100px) { .stage-pair { grid-template-columns: 1fr; } }
+
+    .stage { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+    .caption { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: 10px; }
+    .caption .badge { width: 22px; height: 22px; border-radius: 6px; background: var(--fg); color: var(--bg); display: grid; place-items: center; font-family: var(--font-mono); font-size: 11px; font-weight: 600; }
+    .caption strong { color: var(--fg); font-weight: 600; }
+
+    .device.iphone { position: relative; width: 390px; height: 844px; border-radius: 56px; padding: 12px; background: linear-gradient(160deg, #2a2a2c 0%, #1a1a1c 50%, #0e0e10 100%); box-shadow: 0 0 0 1px rgba(255,255,255,0.04) inset, 0 0 0 2px #000 inset, 0 28px 60px -12px rgba(0,0,0,0.45), 0 8px 20px -8px rgba(0,0,0,0.35); isolation: isolate; }
+    .device.pixel { position: relative; width: 412px; height: 900px; border-radius: 42px; padding: 8px; background: linear-gradient(160deg, #2a2a2c 0%, #181818 50%, #0c0c0c 100%); box-shadow: 0 0 0 1px rgba(255,255,255,0.04) inset, 0 0 0 2px #000 inset, 0 28px 60px -12px rgba(0,0,0,0.45), 0 8px 20px -8px rgba(0,0,0,0.35); isolation: isolate; }
+    .device.iphone::before, .device.iphone::after { content: ''; position: absolute; width: 3px; background: linear-gradient(to bottom, transparent 0%, rgba(255,255,255,0.06) 8%, transparent 16%, transparent 84%, rgba(255,255,255,0.04) 92%, transparent 100%); top: 100px; bottom: 100px; pointer-events: none; }
+    .device.iphone::before { left: -1px; } .device.iphone::after { right: -1px; }
+    .island { position: absolute; top: 22px; left: 50%; transform: translateX(-50%); width: 124px; height: 36px; background: #000; border-radius: 999px; z-index: 5; }
+    .btn-rail { position: absolute; width: 4px; background: #0a0a0c; border-radius: 2px; }
+    .device.iphone .btn-rail.l1 { left: -3px; top: 174px; height: 32px; }
+    .device.iphone .btn-rail.l2 { left: -3px; top: 220px; height: 60px; }
+    .device.iphone .btn-rail.l3 { left: -3px; top: 290px; height: 60px; }
+    .device.iphone .btn-rail.r1 { right: -3px; top: 250px; height: 100px; }
+    .device.pixel .btn-rail { width: 3px; }
+    .device.pixel .btn-rail.r1 { right: -2px; top: 160px; height: 60px; }
+    .device.pixel .btn-rail.r2 { right: -2px; top: 230px; height: 90px; }
+    .punch-hole { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); width: 22px; height: 22px; background: #000; border-radius: 50%; z-index: 5; }
+
+    .device .screen { position: relative; width: 100%; height: 100%; background: var(--bg); overflow: hidden; display: flex; flex-direction: column; }
+    .device.iphone .screen { border-radius: 44px; }
+    .device.pixel .screen { border-radius: 36px; }
+    .statusbar { flex: 0 0 47px; padding: 18px 26px 0; display: flex; align-items: flex-start; justify-content: space-between; font-family: var(--font-body); font-size: 15px; font-weight: 600; color: var(--fg); letter-spacing: -0.01em; }
+    .device.pixel .statusbar { flex-basis: 32px; padding: 12px 22px 0; font-size: 13px; font-weight: 500; }
+    .statusbar .right { display: inline-flex; align-items: center; gap: 6px; }
+    .statusbar svg { width: 17px; height: 11px; fill: var(--fg); }
+    .device.pixel .statusbar svg { width: 15px; height: 11px; }
+    .statusbar .battery { width: 25px; }
+    .device.pixel .statusbar .battery { width: 22px; height: 11px; }
+    .home-indicator { flex: 0 0 28px; position: relative; }
+    .home-indicator::after { content: ''; position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); width: 134px; height: 5px; background: var(--fg); border-radius: 999px; opacity: 0.4; }
+    .device.pixel .gesture-bar { flex: 0 0 22px; position: relative; }
+    .device.pixel .gesture-bar::after { content: ''; position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%); width: 120px; height: 4px; background: var(--fg); border-radius: 999px; opacity: 0.45; }
+
+    /* Settings content */
+    .set-content { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; padding: 0 0 16px; }
+    .set-content::-webkit-scrollbar { display: none; }
+    .set-appbar {
+      padding: 6px 12px 14px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .set-appbar .back-btn {
+      width: 36px; height: 36px;
+      display: grid; place-items: center;
+      background: transparent; border: 0; color: var(--fg);
+    }
+    .set-appbar .back-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+    .set-appbar h1 { font-family: var(--font-display); font-size: 22px; font-weight: 600; letter-spacing: -0.018em; margin: 0; }
+
+    .set-section { padding: 8px 16px 16px; }
+    .device.pixel .set-section { padding: 8px 18px 16px; }
+    .set-section + .set-section { padding-top: 4px; }
+    .set-section-label { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.14em; text-transform: uppercase; color: var(--meta); margin: 0 6px 8px; padding-left: 4px; }
+
+    .set-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; }
+    .set-card .row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 0;
+    }
+    .set-card .row + .row { border-top: 1px solid var(--border-soft); }
+    .set-card .row .left { flex: 1; min-width: 0; }
+    .set-card .row .title { font-size: 14px; font-weight: 500; color: var(--fg); line-height: 1.3; }
+    .set-card .row .sub { font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+    .set-card .row .right { color: var(--meta); display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; }
+    .set-card .row .right .arrow { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+    .set-card .row .right .value { font-size: 13px; }
+
+    /* iOS-style toggle */
+    .toggle {
+      width: 50px; height: 30px;
+      border-radius: 999px;
+      background: var(--border);
+      position: relative;
+      flex-shrink: 0;
+      transition: background var(--motion-base) var(--ease-standard);
+    }
+    .toggle::after {
+      content: '';
+      position: absolute;
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: #fff;
+      top: 2px; left: 2px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      transition: transform var(--motion-base) var(--ease-standard);
+    }
+    .toggle.on { background: var(--success); }
+    .toggle.on::after { transform: translateX(20px); }
+
+    /* Account row */
+    .account-card { display: flex; align-items: center; gap: 14px; padding: 4px; }
+    .avatar-md {
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #c96442 0%, #d57a4f 100%);
+      color: #fff;
+      display: grid; place-items: center;
+      font-family: var(--font-display);
+      font-size: 18px; font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    .account-meta .name { font-family: var(--font-display); font-size: 18px; font-weight: 600; letter-spacing: -0.012em; margin: 0; }
+    .account-meta .streak { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    /* Danger row */
+    .danger { color: var(--danger); }
+    .danger .title { color: var(--danger); }
+
+    /* Signout */
+    .signout {
+      margin: 12px 16px 0;
+      padding: 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      text-align: center;
+      color: var(--fg);
+      font: inherit; font-size: 14px; font-weight: 500;
+      cursor: pointer;
+      transition: transform 100ms var(--ease-standard);
+    }
+    .signout:active { transform: scale(0.98); }
+
+    /* Footer (version info) */
+    .set-footer {
+      padding: 20px 16px 0;
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      color: var(--meta);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .signout:active { transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="page-top" data-od-id="page-top">
+    <div class="crumbs"><strong>清流</strong> · 设置页</div>
+    <a class="back" href="index.html" data-od-id="back-home">
+      <svg viewBox="0 0 24 24" aria-hidden><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+      返回首页
+    </a>
+  </header>
+
+  <section class="head" data-od-id="head">
+    <p class="eyebrow">SETTINGS</p>
+    <h1>设置</h1>
+    <p class="lede">账户、通知、隐私、外观、关于 6 个分组。所有动作类切换走 iOS 标准 toggle / Android Material 3 switch，文案双端逐字对齐。</p>
+  </section>
+
+  <main class="stage-pair">
+
+    <!-- iOS -->
+    <article class="stage" data-od-id="ios-settings">
+      <div class="caption"><span class="badge">iOS</span> <strong>iPhone 15 Pro</strong> · 设置</div>
+      <div class="device iphone">
+        <span class="btn-rail l1" aria-hidden></span><span class="btn-rail l2" aria-hidden></span><span class="btn-rail l3" aria-hidden></span><span class="btn-rail r1" aria-hidden></span>
+        <span class="island" aria-hidden></span>
+        <div class="screen">
+          <div class="statusbar"><span class="num">9:41</span><span class="right"><svg viewBox="0 0 17 11"><rect x="0" y="7" width="3" height="4" rx="0.6"/><rect x="4" y="5" width="3" height="6" rx="0.6"/><rect x="8" y="3" width="3" height="8" rx="0.6"/><rect x="12" y="0" width="3" height="11" rx="0.6"/></svg><svg viewBox="0 0 17 11"><path d="M8.5 1.5C5.5 1.5 2.7 2.6 0.5 4.6L2 6.1C3.8 4.5 6.1 3.6 8.5 3.6c2.4 0 4.7 0.9 6.5 2.5l1.5-1.5c-2.2-2-5-3.1-8-3.1zM3.5 7.6L5 9.1c1-0.9 2.2-1.4 3.5-1.4 1.3 0 2.5 0.5 3.5 1.4l1.5-1.5c-1.4-1.3-3.1-2-5-2-1.9 0-3.6 0.7-5 2zM6.5 10.6l2 2 2-2c-0.5-0.5-1.2-0.8-2-0.8s-1.5 0.3-2 0.8z"/></svg><svg class="battery" viewBox="0 0 25 11"><rect x="0.5" y="0.5" width="21" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-opacity="0.45"/><rect x="22" y="3.5" width="1.5" height="4" rx="0.4" fill="currentColor" fill-opacity="0.45"/><rect x="2" y="2" width="18" height="7" rx="1.4"/></svg></span></div>
+
+          <main class="set-content">
+            <div class="set-appbar">
+              <button class="back-btn" aria-label="返回"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>
+              <h1>设置</h1>
+            </div>
+
+            <section class="set-section" data-od-id="set-account">
+              <p class="set-section-label">账户</p>
+              <div class="set-card account-card">
+                <div class="avatar-md" aria-label="小宇">宇</div>
+                <div class="account-meta">
+                  <p class="name">小宇</p>
+                  <p class="streak">第 23 天 · 你还在。这就够了。</p>
+                </div>
+              </div>
+            </section>
+
+            <section class="set-section" data-od-id="set-notifications">
+              <p class="set-section-label">通知</p>
+              <div class="set-card">
+                <div class="row">
+                  <div class="left">
+                    <div class="title">早晨承诺提醒</div>
+                    <div class="sub">每天 08:00 · "新的一天开始了"</div>
+                  </div>
+                  <div class="right"><div class="toggle on" data-od-id="toggle-morning"></div></div>
+                </div>
+                <div class="row">
+                  <div class="left">
+                    <div class="title">夜间回顾</div>
+                    <div class="sub">每天 22:00 · "睡前花 2 分钟看看今天"</div>
+                  </div>
+                  <div class="right"><div class="toggle on" data-od-id="toggle-evening"></div></div>
+                </div>
+                <div class="row">
+                  <div class="left">
+                    <div class="title">高风险时段</div>
+                    <div class="sub">根据你历史数据动态学习</div>
+                  </div>
+                  <div class="right"><div class="toggle on" data-od-id="toggle-risk"></div></div>
+                </div>
+              </div>
+            </section>
+
+            <section class="set-section" data-od-id="set-privacy">
+              <p class="set-section-label">隐私</p>
+              <div class="set-card">
+                <div class="row">
+                  <div class="left">
+                    <div class="title">AI 对话本地处理</div>
+                    <div class="sub">对话内容不上云，不留存</div>
+                  </div>
+                  <div class="right"><span class="value">已开启</span><svg class="arrow" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+                </div>
+                <div class="row">
+                  <div class="left">
+                    <div class="title">数据所有权</div>
+                    <div class="sub">所有记录都保存在你的设备上</div>
+                  </div>
+                  <div class="right"><span class="value">本地</span><svg class="arrow" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+                </div>
+                <div class="row danger" data-od-id="set-delete">
+                  <div class="left">
+                    <div class="title">删除所有数据</div>
+                    <div class="sub">不可恢复 · 保留 0 天的清白</div>
+                  </div>
+                  <div class="right"><svg class="arrow" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+                </div>
+              </div>
+            </section>
+
+            <section class="set-section" data-od-id="set-appearance">
+              <p class="set-section-label">外观</p>
+              <div class="set-card">
+                <div class="row">
+                  <div class="left">
+                    <div class="title">主题</div>
+                    <div class="sub">温暖陪伴 · 沙色基底</div>
+                  </div>
+                  <div class="right"><span class="value">温暖陪伴</span><svg class="arrow" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+                </div>
+                <div class="row">
+                  <div class="left">
+                    <div class="title">语言</div>
+                    <div class="sub">跟随系统设置</div>
+                  </div>
+                  <div class="right"><span class="value">简体中文</span><svg class="arrow" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+                </div>
+              </div>
+            </section>
+
+            <section class="set-section" data-od-id="set-about">
+              <p class="set-section-label">关于</p>
+              <div class="set-card">
+                <div class="row">
+                  <div class="left"><div class="title">神经科学来源</div></div>
+                  <div class="right"><svg class="arrow" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+                </div>
+                <div class="row">
+                  <div class="left"><div class="title">非临床免责声明</div></div>
+                  <div class="right"><svg class="arrow" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+                </div>
+                <div class="row">
+                  <div class="left"><div class="title">隐私政策</div></div>
+                  <div class="right"><svg class="arrow" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+                </div>
+                <div class="row">
+                  <div class="left"><div class="title">开源许可</div></div>
+                  <div class="right"><svg class="arrow" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+                </div>
+              </div>
+            </section>
+
+            <button class="signout" data-od-id="set-signout">退出登录</button>
+
+            <div class="set-footer">v1.0.0 · build 2026.05.16 · 清流</div>
+          </main>
+
+          <div class="home-indicator" aria-hidden></div>
+        </div>
+      </div>
+    </article>
+
+    <!-- Android -->
+    <article class="stage" data-od-id="android-settings">
+      <div class="caption"><span class="badge">AND</span> <strong>Pixel 6</strong> · 设置</div>
+      <div class="device pixel">
+        <span class="btn-rail r1" aria-hidden></span><span class="btn-rail r2" aria-hidden></span>
+        <span class="punch-hole" aria-hidden></span>
+        <div class="screen">
+          <div class="statusbar"><span class="num">9:41</span><span class="right"><svg viewBox="0 0 17 11"><path d="M8.5 1.5C5.5 1.5 2.7 2.6 0.5 4.6L2 6.1C3.8 4.5 6.1 3.6 8.5 3.6c2.4 0 4.7 0.9 6.5 2.5l1.5-1.5c-2.2-2-5-3.1-8-3.1zM3.5 7.6L5 9.1c1-0.9 2.2-1.4 3.5-1.4 1.3 0 2.5 0.5 3.5 1.4l1.5-1.5c-1.4-1.3-3.1-2-5-2-1.9 0-3.6 0.7-5 2zM6.5 10.6l2 2 2-2c-0.5-0.5-1.2-0.8-2-0.8s-1.5 0.3-2 0.8z"/></svg><svg class="battery" viewBox="0 0 25 11"><rect x="0.5" y="0.5" width="21" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-opacity="0.45"/><rect x="22" y="3.5" width="1.5" height="4" rx="0.4" fill="currentColor" fill-opacity="0.45"/><rect x="2" y="2" width="18" height="7" rx="1.4"/></svg></span></div>
+
+          <main class="set-content">
+            <div class="set-appbar">
+              <button class="back-btn" aria-label="返回"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>
+              <h1>设置</h1>
+            </div>
+
+            <section class="set-section" data-od-id="set-account-and">
+              <p class="set-section-label">账户</p>
+              <div class="set-card account-card">
+                <div class="avatar-md" aria-label="小宇">宇</div>
+                <div class="account-meta">
+                  <p class="name">小宇</p>
+                  <p class="streak">第 23 天 · 你还在。这就够了。</p>
+                </div>
+              </div>
+            </section>
+
+            <section class="set-section" data-od-id="set-notifications-and">
+              <p class="set-section-label">通知</p>
+              <div class="set-card">
+                <div class="row">
+                  <div class="left">
+                    <div class="title">早晨承诺提醒</div>
+                    <div class="sub">每天 08:00 · "新的一天开始了"</div>
+                  </div>
+                  <div class="right"><div class="toggle on" data-od-id="and-toggle-morning"></div></div>
+                </div>
+                <div class="row">
+                  <div class="left">
+                    <div class="title">夜间回顾</div>
+                    <div class="sub">每天 22:00 · "睡前花 2 分钟看看今天"</div>
+                  </div>
+                  <div class="right"><div class="toggle on" data-od-id="and-toggle-evening"></div></div>
+                </div>
+                <div class="row">
+                  <div class="left">
+                    <div class="title">高风险时段</div>
+                    <div class="sub">根据你历史数据动态学习</div>
+                  </div>
+                  <div class="right"><div class="toggle on" data-od-id="and-toggle-risk"></div></div>
+                </div>
+              </div>
+            </section>
+
+            <section class="set-section" data-od-id="set-privacy-and">
+              <p class="set-section-label">隐私</p>
+              <div class="set-card">
+                <div class="row">
+                  <div class="left">
+                    <div class="title">AI 对话本地处理</div>
+                    <div class="sub">对话内容不上云，不留存</div>
+                  </div>
+                  <div class="right"><span class="value">已开启</span><svg class="arrow" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+                </div>
+                <div class="row">
+                  <div class="left">
+                    <div class="title">数据所有权</div>
+                    <div class="sub">所有记录都保存在你的设备上</div>
+                  </div>
+                  <div class="right"><span class="value">本地</span><svg class="arrow" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+                </div>
+                <div class="row danger" data-od-id="and-set-delete">
+                  <div class="left">
+                    <div class="title">删除所有数据</div>
+                    <div class="sub">不可恢复 · 保留 0 天的清白</div>
+                  </div>
+                  <div class="right"><svg class="arrow" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+                </div>
+              </div>
+            </section>
+
+            <section class="set-section" data-od-id="set-appearance-and">
+              <p class="set-section-label">外观</p>
+              <div class="set-card">
+                <div class="row">
+                  <div class="left">
+                    <div class="title">主题</div>
+                    <div class="sub">温暖陪伴 · 沙色基底</div>
+                  </div>
+                  <div class="right"><span class="value">温暖陪伴</span><svg class="arrow" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+                </div>
+                <div class="row">
+                  <div class="left">
+                    <div class="title">语言</div>
+                    <div class="sub">跟随系统设置</div>
+                  </div>
+                  <div class="right"><span class="value">简体中文</span><svg class="arrow" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+                </div>
+              </div>
+            </section>
+
+            <section class="set-section" data-od-id="set-about-and">
+              <p class="set-section-label">关于</p>
+              <div class="set-card">
+                <div class="row">
+                  <div class="left"><div class="title">神经科学来源</div></div>
+                  <div class="right"><svg class="arrow" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+                </div>
+                <div class="row">
+                  <div class="left"><div class="title">非临床免责声明</div></div>
+                  <div class="right"><svg class="arrow" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+                </div>
+                <div class="row">
+                  <div class="left"><div class="title">隐私政策</div></div>
+                  <div class="right"><svg class="arrow" viewBox="0 0 24 24"><path d="="M9 6l6 6-6 6"/></svg></div>
+                </div>
+                <div class="row">
+                  <div class="left"><div class="title">开源许可</div></div>
+                  <div class="right"><svg class="arrow" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+                </div>
+              </div>
+            </section>
+
+            <button class="signout" data-od-id="and-set-signout">退出登录</button>
+
+            <div class="set-footer">v1.0.0 · build 2026.05.16 · 清流</div>
+          </main>
+
+          <div class="gesture-bar" aria-hidden></div>
+        </div>
+      </div>
+    </article>
+
+  </main>
+
+  <script>
+    // Toggles work on tap
+    document.querySelectorAll('.toggle').forEach(t => {
+      t.addEventListener('click', () => t.classList.toggle('on'));
+    });
+    // Signout button has subtle press feedback
+    document.querySelectorAll('.signout').forEach(b => {
+      b.addEventListener('click', e => { e.preventDefault(); });
+    });
+  </script>
+</body>
+</html>

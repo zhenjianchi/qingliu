@@ -21,7 +21,7 @@ class TactileCard extends StatelessWidget {
     this.backgroundColor,
     this.borderColor,
     this.borderRadius = kBorderRadiusLarge,
-    this.borderWidth = kBorderWidth3D,
+    this.borderWidth = 2.0,
     this.onTap,
     this.padding = const EdgeInsets.all(kPaddingLarge),
     this.elevated = true,

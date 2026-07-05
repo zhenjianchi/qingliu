@@ -36,11 +36,24 @@ const int kColorBorderSoft = 0xFFEBE3D0;
 const int kColorPrimary = 0xFF0071E3;          // Apple 蓝
 const int kColorPrimaryHover = 0xFF0077ED;
 const int kColorPrimaryActive = 0xFF0066CC;
+const int kColorPrimaryDark = 0xFF0066CC;
+const int kColorPrimaryLight = 0xFFE9FAD9;
+
+/// Secondary - alias for Apple Blue (V2 compat)
+const int kColorSecondary = 0xFF0071E3;
+const int kColorSecondaryDark = 0xFF0066CC;
+const int kColorSecondaryLight = 0xFFE9FAD9;
+
+/// Accent - alias for Apple Blue (V2 compat)
+const int kColorAccent = 0xFF0071E3;
+const int kColorAccentDark = 0xFF0066CC;
+const int kColorAccentLight = 0xFFE9FAD9;
 
 /// Semantic
 const int kColorSuccess = 0xFF16A34A;
 const int kColorWarning = 0xFFEAB308;
 const int kColorDanger = 0xFFDC2626;
+const int kColorError = 0xFFDC2626;
 
 /// Dark mode colors (warm dark)
 const int kColorDarkBackground = 0xFF1C1916;

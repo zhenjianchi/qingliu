@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>清流 · 神经科学驱动的健康习惯工具</title>
+  <style>
+    /* ─── Apple design system tokens (binding contract, verbatim) ─── */
+    :root {
+      --bg: #ffffff;
+      --surface: #f5f5f7;
+      --surface-warm: #fbfbfd;
+      --fg: #1d1d1f;
+      --fg-2: #424245;
+      --muted: #6e6e73;
+      --meta: #86868b;
+      --border: #d2d2d7;
+      --border-soft: #e8e8ed;
+      --accent: #0071e3;
+      --accent-on: #ffffff;
+      --accent-hover: #0077ed;
+      --accent-active: #0066cc;
+      --success: #16a34a;
+      --warn: #eab308;
+      --danger: #dc2626;
+
+      --font-display: "SF Pro Display","SF Pro Icons","Helvetica Neue",Helvetica,Arial,sans-serif;
+      --font-body: "SF Pro Text","SF Pro Icons","Helvetica Neue",Helvetica,Arial,sans-serif;
+      --font-mono: "SF Mono",ui-monospace,"JetBrains Mono",Menlo,Monaco,Consolas,monospace;
+
+      --text-xs: 12px; --text-sm: 14px; --text-base: 17px; --text-lg: 21px;
+      --text-xl: 28px; --text-2xl: 40px; --text-3xl: 56px; --text-4xl: 80px;
+      --leading-body: 1.47; --leading-tight: 1.05;
+      --tracking-display: -0.015em;
+
+      --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+      --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-12: 48px;
+
+      --section-y-desktop: 100px; --section-y-tablet: 64px; --section-y-phone: 40px;
+
+      --radius-sm: 8px; --radius-md: 12px; --radius-lg: 18px; --radius-pill: 980px;
+
+      --elev-flat: none;
+      --elev-ring: 0 0 0 1px var(--border);
+      --elev-raised: 0 12px 32px rgba(0,0,0,0.08);
+
+      --focus-ring: 0 0 0 4px color-mix(in oklab, var(--accent), transparent 65%);
+      --motion-fast: 150ms; --motion-base: 220ms;
+      --ease-standard: cubic-bezier(0.28, 0, 0.22, 1);
+
+      /* ─── Warm-companion tone override (user-selected variant) ─────────
+       * Surfaces shift toward warm sand; primary text gains slight warmth.
+       * Action accent (--accent) stays Apple blue — discipline preserved.
+       * This is a designer-chosen tone variant on the Apple schema, not an
+       * invention of new tokens. */
+      --bg: #fbf8f1;            /* warm cream canvas (vs pure white) */
+      --surface: #f3ece0;       /* sand feature field (vs pale apple gray) */
+      --surface-warm: #f8f2e6;  /* brightness-shifted sand (intermediate) */
+      --fg: #2c2620;            /* warm-tinted near-black ink */
+      --fg-2: #5a544a;
+      --muted: #8b7e6e;         /* warm secondary text */
+      --meta: #a99c8a;          /* warm meta */
+      --border: #e3d9c4;        /* sand border */
+      --border-soft: #ebe3d0;
+    }
+
+    *,*::before,*::after { box-sizing: border-box; }
+    html,body { margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-body);
+      color: var(--fg);
+      background:
+        radial-gradient(70% 50% at 50% -10%, color-mix(in oklab, var(--accent) 8%, var(--bg)) 0%, var(--bg) 60%),
+        var(--bg);
+      font-size: var(--text-base);
+      line-height: var(--leading-body);
+      -webkit-font-smoothing: antialiased;
+      letter-spacing: -0.005em;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { color: var(--accent-hover); }
+
+    /* ─── Layout primitives ──────────────────────────────────────── */
+    .container { max-width: var(--container-max); margin: 0 auto; padding: 0 22px; }
+    .pad { padding-inline: 22px; }
+    .stack { display: flex; flex-direction: column; gap: 14px; }
+    .row { display: flex; align-items: center; gap: 14px; }
+    .row-between { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+
+    /* ─── Hero ──────────────────────────────────────────────────── */
+    .topbar {
+      position: sticky; top: 0; z-index: 10;
+      backdrop-filter: saturate(180%) blur(20px);
+      background: color-mix(in oklab, var(--bg) 86%, transparent);
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .topbar-inner {
+      max-width: var(--container-max);
+      margin: 0 auto;
+      padding: 14px 22px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .brand-mark {
+      font-family: var(--font-display);
+      font-size: 19px;
+      font-weight: 600;
+      letter-spacing: -0.012em;
+      color: var(--fg);
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .brand-mark .glyph {
+      width: 24px; height: 24px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #8a6b46 0%, #c96442 60%, #d57a4f 100%);
+      display: inline-grid; place-items: center;
+      color: #fff;
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .topbar-nav { display: flex; align-items: center; gap: 22px; }
+    .topbar-nav a {
+      font-size: var(--text-sm);
+      color: var(--fg);
+      letter-spacing: -0.005em;
+    }
+
+    .hero {
+      max-width: var(--container-max);
+      margin: 0 auto;
+      padding: 96px 22px 80px;
+      text-align: center;
+    }
+    .hero .eyebrow {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 18px;
+    }
+    .hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(40px, 7vw, var(--text-3xl));
+      font-weight: 600;
+      letter-spacing: var(--tracking-display);
+      line-height: 1.04;
+      margin: 0 0 18px;
+      color: var(--fg);
+    }
+    .hero .lede {
+      max-width: 56ch;
+      margin: 0 auto;
+      color: var(--fg-2);
+      font-size: var(--text-base);
+      line-height: 1.55;
+    }
+    .hero .lede strong { color: var(--fg); font-weight: 600; }
+
+    /* ─── Direction strip ──────────────────────────────────────── */
+    .direction {
+      max-width: var(--container-max);
+      margin: 0 auto 60px;
+      padding: 0 22px;
+    }
+    .direction-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+    .direction-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 22px 20px;
+    }
+    .direction-card .label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--meta);
+      margin: 0 0 10px;
+    }
+    .direction-card .title {
+      font-family: var(--font-display);
+      font-size: 19px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      margin: 0 0 8px;
+      color: var(--fg);
+    }
+    .direction-card .desc {
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--fg-2);
+      margin: 0;
+    }
+    .swatch-row { display: flex; gap: 6px; margin-top: 14px; }
+    .swatch {
+      width: 22px; height: 22px;
+      border-radius: 6px;
+      border: 1px solid rgba(0,0,0,0.06);
+    }
+
+    /* ─── Platform picker ───────────────────────────────────────── */
+    .platforms {
+      max-width: var(--container-max);
+      margin: 0 auto 80px;
+      padding: 0 22px;
+    }
+    .platforms h2 {
+      font-family: var(--font-display);
+      font-size: var(--text-2xl);
+      font-weight: 600;
+      letter-spacing: var(--tracking-display);
+      margin: 0 0 10px;
+      text-align: center;
+    }
+    .platforms .sub {
+      color: var(--fg-2);
+      font-size: var(--text-base);
+      max-width: 60ch;
+      margin: 0 auto 36px;
+      text-align: center;
+      line-height: 1.55;
+    }
+    .platform-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .platform-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 36px 32px;
+      display: flex; flex-direction: column; gap: 16px;
+      transition: transform var(--motion-base) var(--ease-standard),
+                  box-shadow var(--motion-base) var(--ease-standard);
+    }
+    .platform-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--elev-raised);
+    }
+    .platform-card .glyph {
+      width: 48px; height: 48px;
+      border-radius: 14px;
+      background: var(--fg);
+      color: var(--accent-on);
+      display: grid; place-items: center;
+    }
+    .platform-card .glyph svg { width: 26px; height: 26px; fill: currentColor; }
+    .platform-card .name {
+      font-family: var(--font-display);
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin: 0;
+    }
+    .platform-card .tag {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .platform-card .desc {
+      color: var(--fg-2);
+      font-size: 15px;
+      line-height: 1.55;
+      margin: 0;
+    }
+    .platform-card .enter {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: var(--accent);
+      font-size: 15px;
+      font-weight: 500;
+      margin-top: 4px;
+    }
+    .platform-card .enter svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+    /* ─── Screen gallery ────────────────────────────────────────── */
+    .gallery {
+      max-width: var(--container-max);
+      margin: 0 auto 80px;
+      padding: 0 22px;
+    }
+    .gallery h2 {
+      font-family: var(--font-display);
+      font-size: var(--text-2xl);
+      font-weight: 600;
+      letter-spacing: var(--tracking-display);
+      margin: 0 0 10px;
+      text-align: center;
+    }
+    .gallery .sub {
+      color: var(--fg-2);
+      max-width: 56ch;
+      margin: 0 auto 36px;
+      text-align: center;
+      font-size: var(--text-base);
+      line-height: 1.55;
+    }
+    .screen-list {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .screen-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 18px 18px 16px;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .screen-card .num {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      color: var(--meta);
+      margin: 0;
+    }
+    .screen-card .name {
+      font-family: var(--font-display);
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      margin: 0;
+      color: var(--fg);
+    }
+    .screen-card .what {
+      font-size: 13px;
+      color: var(--fg-2);
+      margin: 4px 0 0;
+      line-height: 1.45;
+    }
+    .screen-card .phase {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-top: 8px;
+    }
+
+    /* ─── Principles strip ─────────────────────────────────────── */
+    .principles {
+      max-width: var(--container-max);
+      margin: 0 auto 80px;
+      padding: 0 22px;
+    }
+    .principles h2 {
+      font-family: var(--font-display);
+      font-size: var(--text-2xl);
+      font-weight: 600;
+      letter-spacing: var(--tracking-display);
+      margin: 0 0 10px;
+      text-align: center;
+    }
+    .principles .sub {
+      color: var(--fg-2);
+      max-width: 56ch;
+      margin: 0 auto 36px;
+      text-align: center;
+      font-size: var(--text-base);
+    }
+    .principle-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      border-top: 1px solid var(--border);
+    }
+    .principle-row {
+      display: grid;
+      grid-template-columns: 36px 1fr;
+      gap: 16px;
+      padding: 22px 18px;
+      border-bottom: 1px solid var(--border);
+      border-right: 1px solid var(--border-soft);
+    }
+    .principle-row:nth-child(2n) { border-right: 0; }
+    .principle-row .num {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--meta);
+      letter-spacing: 0.08em;
+    }
+    .principle-row h4 {
+      font-family: var(--font-display);
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      margin: 0 0 6px;
+    }
+    .principle-row p {
+      margin: 0;
+      font-size: 14px;
+      color: var(--fg-2);
+      line-height: 1.55;
+    }
+
+    /* ─── Footer ───────────────────────────────────────────────── */
+    footer {
+      max-width: var(--container-max);
+      margin: 0 auto;
+      padding: 40px 22px 80px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 18px;
+      color: var(--muted);
+      font-size: var(--text-sm);
+    }
+
+    @media (max-width: 833px) {
+      .direction-grid { grid-template-columns: repeat(2, 1fr); }
+      .platform-grid { grid-template-columns: 1fr; }
+      .screen-list { grid-template-columns: repeat(2, 1fr); }
+      .principle-list { grid-template-columns: 1fr; }
+      .principle-row { border-right: 0; }
+      .hero { padding: 56px 22px 48px; }
+    }
+    @media (max-width: 540px) {
+      .direction-grid { grid-template-columns: 1fr; }
+      .screen-list { grid-template-columns: 1fr; }
+      .topbar-nav { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar" data-od-id="topbar">
+    <div class="topbar-inner">
+      <a class="brand-mark" href="#top" data-od-id="brand-mark">
+        <span class="glyph">清</span>
+        清流
+      </a>
+      <nav class="topbar-nav" data-od-id="top-nav">
+        <a href="#directions">视觉方向</a>
+        <a href="#platforms">平台</a>
+        <a href="#screens">屏幕集</a>
+        <a href="#extras">更多页面</a>
+        <a href="#principles">原则</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" id="top" data-od-id="hero">
+      <p class="eyebrow">清流 · QINGLIU · V2.0 演进版</p>
+      <h1>用科学的方式，陪你在渴望的每一刻<br/>做出不同的选择。</h1>
+      <p class="lede">
+        清流是一款基于神经科学的健康习惯工具。当渴望高峰来袭（约 90 秒），我们用
+        <strong>循证打断技术（CBT / ACT）</strong> 帮你的前额叶重新夺回主动权；当破戒发生，
+        我们用<strong>科学叙事</strong>取代羞耻感；当日子往前走，我们用<strong>可验证的恢复进程</strong>让你看见变化。
+      </p>
+    </section>
+
+    <section class="direction" id="directions" data-od-id="direction">
+      <div class="direction-grid">
+        <div class="direction-card" data-od-id="direction-tone">
+          <p class="label">视觉调性</p>
+          <h3 class="title">温暖陪伴</h3>
+          <p class="desc">沙色基底取代纯白，暖墨色文字取代冷黑。避开临床感和工具冷感，把"陪伴"作为视觉基调。</p>
+          <div class="swatch-row">
+            <span class="swatch" style="background:#fbf8f1"></span>
+            <span class="swatch" style="background:#f3ece0"></span>
+            <span class="swatch" style="background:#e3d9c4"></span>
+            <span class="swatch" style="background:#2c2620"></span>
+          </div>
+        </div>
+        <div class="direction-card" data-od-id="direction-type">
+          <p class="label">字体语言</p>
+          <h3 class="title">SF Pro + 汉字</h3>
+          <p class="desc">英文 SF Pro Display / Text，中文走 SF Pro 的汉字回退链。Display 紧 tracking 走苹果"机器感"标题，body 17px 走 Retina 阅读基线。</p>
+          <div class="swatch-row">
+            <span class="swatch" style="background:var(--font-display,#1d1d1f);font-family:var(--font-display);color:#fff;font-size:11px;display:grid;place-items:center;">Aa</span>
+            <span class="swatch" style="background:var(--font-body,#1d1d1f);font-family:var(--font-body);color:#fff;font-size:11px;display:grid;place-items:center;">字</span>
+          </div>
+        </div>
+        <div class="direction-card" data-od-id="direction-accent">
+          <p class="label">操作主色</p>
+          <h3 class="title">单蓝色动作</h3>
+          <p class="desc">Apple Action Blue 是唯一可靠的动作语言。在暖色背景上更具指向性，每屏只出现 ≤2 次，绝不与品牌色抢戏。</p>
+          <div class="swatch-row">
+            <span class="swatch" style="background:#0071e3"></span>
+            <span class="swatch" style="background:#0077ed"></span>
+            <span class="swatch" style="background:#0066cc"></span>
+          </div>
+        </div>
+        <div class="direction-card" data-od-id="direction-style">
+          <p class="label">叙事原则</p>
+          <h3 class="title">去羞耻化</h3>
+          <p class="desc">禁用"超能力/重启/觉醒/失败"等叙事。每一条文案都用神经科学语言（多巴胺受体、前额叶、90 秒高峰）替换判断性语言。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="platforms" id="platforms" data-od-id="platforms">
+      <h2>选择你的平台</h2>
+      <p class="sub">清流同时支持 iOS 与 Android。本轮交付包含 6 个核心屏幕：首页、渴望应对（最关键路径）、T4 90 秒呼吸法、破戒后支持问卷、AI 即时支持、效果数据面板。整套交互以"在 3 秒内打开能为此刻分忧的工具"为目标。</p>
+      <div class="platform-grid">
+        <a class="platform-card" href="mobile-ios.html" data-od-id="platform-ios">
+          <div class="glyph">
+            <svg viewBox="0 0 24 24" aria-hidden><path d="M17.05 12.04c-.03-2.99 2.45-4.43 2.56-4.5-1.4-2.04-3.58-2.32-4.35-2.35-1.84-.19-3.6 1.08-4.53 1.08-.93 0-2.38-1.05-3.91-1.02-2 .03-3.86 1.16-4.9 2.95-2.09 3.62-.53 8.98 1.5 11.91 1 1.44 2.18 3.05 3.72 3 1.5-.06 2.06-.97 3.87-.97s2.32.97 3.91.94c1.62-.03 2.64-1.46 3.62-2.91 1.14-1.66 1.61-3.27 1.64-3.36-.04-.02-3.15-1.21-3.18-4.79zm-2.95-8.79c.82-1 1.38-2.39 1.23-3.77-1.19.05-2.63.79-3.49 1.79-.77.89-1.45 2.31-1.27 3.66 1.32.1 2.69-.67 3.53-1.68z"/></svg>
+          </div>
+          <span class="tag">iPhone · iOS 16+</span>
+          <h3 class="name">iOS 展示</h3>
+          <p class="desc">iPhone 15 Pro 框 · Dynamic Island · Status Bar · Tab Bar · 苹果式触觉反馈。</p>
+          <span class="enter">进入 iOS 页面
+            <svg viewBox="0 0 24 24" aria-hidden><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </span>
+        </a>
+
+        <a class="platform-card" href="mobile-android.html" data-od-id="platform-android">
+          <div class="glyph" style="background:#1a1a1a;color:#a4c639;">
+            <svg viewBox="0 0 24 24" aria-hidden><path d="M17.6 9.48l1.84-3.18c.16-.31.04-.69-.27-.85-.29-.15-.65-.06-.83.22l-1.88 3.24a11.5 11.5 0 0 0-8.92 0L5.66 5.65c-.18-.28-.54-.37-.83-.22-.31.16-.43.54-.27.85L6.4 9.48A10.78 10.78 0 0 0 2 18h20a10.78 10.78 0 0 0-4.4-8.52zM7 15.25a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5zm10 0a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5z"/></svg>
+          </div>
+          <span class="tag">Pixel · Android 13+</span>
+          <h3 class="name">Android 展示</h3>
+          <p class="desc">Pixel 6 框 · Punch-Hole · Material Navigation · 适配 M3 触控节奏与底部导航。</p>
+          <span class="enter">进入 Android 页面
+            <svg viewBox="0 0 24 24" aria-hidden><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </span>
+        </a>
+      </div>
+    </section>
+
+    <section class="gallery" id="screens" data-od-id="gallery">
+      <h2>六屏 · 一条用户旅程</h2>
+      <p class="sub">从每日首次打开 App，到渴望来袭的 3 秒响应，到一整周的数据反观 —— 这六屏之间没有一刀切的界限，但每屏只承担一件事。</p>
+      <div class="screen-list">
+        <article class="screen-card" data-od-id="screen-timer">
+          <p class="num">01</p>
+          <h3 class="name">首页 · 戒断计时器</h3>
+          <p class="what">秒级精确计时、神经恢复可视化、4 个高频入口。是最高频的首屏。</p>
+          <p class="phase">P0 · MVP</p>
+        </article>
+        <article class="screen-card" data-od-id="screen-urge">
+          <p class="num">02</p>
+          <h3 class="name">渴望应对面板</h3>
+          <p class="what">本轮首发屏。从强度自评到 T11 / T4 / T5 推荐，最后落到"此刻的想法"反思区。</p>
+          <p class="phase">P0 · MVP 重点</p>
+        </article>
+        <article class="screen-card" data-od-id="screen-t4">
+          <p class="num">03</p>
+          <h3 class="name">T4 · 90 秒呼吸法</h3>
+          <p class="what">吸气 4 · 屏息 2 · 呼气 15，6 轮构成一个完整的渴望高峰周期。视觉引导加心率暗示。</p>
+          <p class="phase">P0 · MVP</p>
+        </article>
+        <article class="screen-card" data-od-id="screen-relapse">
+          <p class="num">04</p>
+          <h3 class="name">破戒后支持问卷</h3>
+          <p class="what">5 个问题 2 分钟，引导复盘而非归零。完成后呈现科学叙事、保留累计数据。</p>
+          <p class="phase">P0 · 差异化</p>
+        </article>
+        <article class="screen-card" data-od-id="screen-ai">
+          <p class="num">05</p>
+          <h3 class="name">AI 即时支持</h3>
+          <p class="what">V1.2 高亮。基于当前情境推送个性化应对建议，本地化处理，明确"非临床"边界。</p>
+          <p class="phase">P2 · 护城河</p>
+        </article>
+        <article class="screen-card" data-od-id="screen-data">
+          <p class="num">06</p>
+          <h3 class="name">效果数据面板</h3>
+          <p class="what">本周应对次数、神经恢复进度、情绪-触发热力图、里程碑时间线。</p>
+          <p class="phase">P1/P2</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="gallery" id="extras" data-od-id="extras">
+      <h2>更多页面 · 用户旅程的起点与尽头</h2>
+      <p class="sub">从打开 App 第一眼，到 90 天之后的回头看。三个独立文件，每个都同时呈现 iOS 与 Android 同屏对照。</p>
+      <div class="screen-list">
+        <a class="screen-card" href="mobile-splash.html" data-od-id="extra-splash" style="text-decoration: none; color: inherit;">
+          <p class="num">EX · 01</p>
+          <h3 class="name">启动页 · 温暖的开场</h3>
+          <p class="what">品牌主形 + 一句话承诺 + "开始新的 90 天 / 继续第 23 天" 两个入口。</p>
+          <p class="phase">引导前 · 单帧成立</p>
+        </a>
+        <a class="screen-card" href="mobile-onboarding.html" data-od-id="extra-onboarding" style="text-decoration: none; color: inherit;">
+          <p class="num">EX · 02</p>
+          <h3 class="name">引导页 · 3 步欢迎</h3>
+          <p class="what">① 这里没有评判 → ② 安静正在发生 → ③ 应对工具待命。进度点 + 跳过 / 返回。</p>
+          <p class="phase">首次打开 · 3 步</p>
+        </a>
+        <a class="screen-card" href="mobile-settings.html" data-od-id="extra-settings" style="text-decoration: none; color: inherit;">
+          <p class="num">EX · 03</p>
+          <h3 class="name">设置页 · 账户 / 通知 / 隐私</h3>
+          <p class="what">6 个分组：账户、通知、隐私、外观、关于、退出。隐私 / 非临床条款双端对齐。</p>
+          <p class="phase">个人中心 · iOS toggle / Android M3 switch</p>
+        </a>
+      </div>
+    </section>
+
+    <section class="principles" id="principles" data-od-id="principles">
+      <h2>五条不能妥协的原则</h2>
+      <p class="sub">从 PRD §4 拆出，把"伦理边界"翻译成设计语言：</p>
+      <div class="principle-list">
+        <div class="principle-row" data-od-id="principle-noshaming">
+          <span class="num">01</span>
+          <div>
+            <h4>破戒 ≠ 失败</h4>
+            <p>所有文案禁用"失败/归零/从头来"，改用"保留累计时间 + 你学到的 + 你拥有的"。</p>
+          </div>
+        </div>
+        <div class="principle-row" data-od-id="principle-science">
+          <span class="num">02</span>
+          <div>
+            <h4>神经科学语言</h4>
+            <p>用"多巴胺受体 / 前额叶抑制 / 90 秒高峰"等可验证语言，禁用"超能力 / 重启 / 觉醒"。</p>
+          </div>
+        </div>
+        <div class="principle-row" data-od-id="principle-3sec">
+          <span class="num">03</span>
+          <div>
+            <h4>3 秒内可达</h4>
+            <p>从任意屏幕到渴望应对面板 ≤ 3 秒。主屏的"渴望应对"按钮直接触达推荐技术。</p>
+          </div>
+        </div>
+        <div class="principle-row" data-od-id="principle-evidence">
+          <span class="num">04</span>
+          <div>
+            <h4>证据强度排序</h4>
+            <p>T11 / T4 / T5 优先呈现，其余 8 种折叠在"查看全部"中。每条引用都标注研究来源。</p>
+          </div>
+        </div>
+        <div class="principle-row" data-od-id="principle-consent">
+          <span class="num">05</span>
+          <div>
+            <h4>隐私优先</h4>
+            <p>AI 对话、效果周报、伙伴匹配都默认匿名 / 本地处理，开启公共分享需显式同意。</p>
+          </div>
+        </div>
+        <div class="principle-row" data-od-id="principle-clinical">
+          <span class="num">06</span>
+          <div>
+            <h4>非临床边界</h4>
+            <p>在 AI 对话、效果数据等模块明示"本产品不替代专业心理咨询"，并提供转介路径。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer data-od-id="footer">
+    <span>清流原型 · v1 高保真 · 用 Apple 设计语言 × 暖色陪伴调性表达神经科学</span>
+    <span>iOS · Android · Flutter source</span>
+  </footer>
+</body>
+</html>

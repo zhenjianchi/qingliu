@@ -1,0 +1,1100 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>清流 · Android 原型 · 6 屏展示</title>
+  <style>
+    /* ─── Apple tokens — same warm-companion override as iOS ─────── */
+    :root {
+      --bg: #fbf8f1;
+      --surface: #f3ece0;
+      --surface-warm: #f8f2e6;
+      --fg: #2c2620;
+      --fg-2: #5a544a;
+      --muted: #8b7e6e;
+      --meta: #a99c8a;
+      --border: #e3d9c4;
+      --border-soft: #ebe3d0;
+      --accent: #0071e3;
+      --accent-on: #ffffff;
+      --accent-hover: #0077ed;
+      --accent-active: #0066cc;
+      --success: #16a34a;
+      --warn: #eab308;
+      --danger: #dc2626;
+      --font-display: "SF Pro Display","SF Pro Icons","Helvetica Neue",Helvetica,Arial,"Roboto","Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+      --font-body: "SF Pro Text","SF Pro Icons","Helvetica Neue",Helvetica,Arial,"Roboto","Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+      --font-mono: "SF Mono",ui-monospace,"JetBrains Mono",Menlo,Monaco,Consolas,"Roboto Mono",monospace;
+      --leading-body: 1.4;
+      --tracking-display: -0.015em;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-pill: 980px;
+      --motion-base: 220ms;
+      --ease-standard: cubic-bezier(0.28, 0, 0.22, 1);
+      --fs-display: 32px;
+      --fs-h1: 22px;
+      --fs-h2: 18px;
+      --fs-h3: 16px;
+      --fs-body: 14px;
+      --fs-sm: 12px;
+      --fs-xs: 11px;
+    }
+
+    *,*::before,*::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      font-size: var(--fs-body);
+      line-height: 1.5;
+      color: var(--fg);
+      background:
+        radial-gradient(80% 50% at 50% -8%, color-mix(in oklab, #a4c639 6%, var(--bg)) 0%, var(--bg) 70%),
+        var(--bg);
+      -webkit-font-smoothing: antialiased;
+      letter-spacing: -0.005em;
+    }
+
+    /* ─── Page chrome ─────────────────────────────────────────── */
+    .page-top { max-width: 1480px; margin: 0 auto; padding: 32px 28px 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .page-top .crumbs { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+    .page-top .crumbs strong { color: var(--fg); font-weight: 600; }
+    .page-top .back { font-family: var(--font-body); color: var(--accent); font-size: 14px; display: inline-flex; align-items: center; gap: 4px; }
+    .page-top .back svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+    .showcase-head { max-width: 1480px; margin: 0 auto; padding: 36px 28px 28px; }
+    .showcase-head .eyebrow { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin: 0 0 14px; }
+    .showcase-head h1 { font-family: var(--font-display); font-size: clamp(34px, 5vw, 48px); font-weight: 600; letter-spacing: var(--tracking-display); line-height: 1.06; margin: 0 0 14px; }
+    .showcase-head .lede { max-width: 68ch; color: var(--fg-2); font-size: 17px; line-height: 1.55; margin: 0; }
+
+    .nav-strip { max-width: 1480px; margin: 0 auto 36px; padding: 0 28px; }
+    .nav-strip-inner { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border-soft); padding: 14px 0; }
+    .nav-strip-inner a { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.06em; color: var(--muted); padding: 6px 12px; border-radius: var(--radius-pill); border: 1px solid transparent; transition: all var(--motion-base) var(--ease-standard); }
+    .nav-strip-inner a:hover { color: var(--fg); border-color: var(--border); }
+
+    /* ─── Showcase grid ─────────────────────────────────────────── */
+    .showcase { max-width: 1480px; margin: 0 auto 80px; padding: 0 28px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 56px 36px; align-items: start; justify-items: center; }
+    @media (max-width: 1180px) { .showcase { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 760px) { .showcase { grid-template-columns: 1fr; } }
+
+    /* ─── Pixel 6 / 7 device frame ──────────────────────────────── */
+    .stage { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+    .caption { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: 10px; }
+    .caption .num { width: 22px; height: 22px; border-radius: 6px; background: var(--fg); color: var(--accent-on); display: grid; place-items: center; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0; font-weight: 600; }
+    .caption strong { color: var(--fg); font-weight: 600; }
+
+    .device {
+      position: relative;
+      width: 412px;
+      height: 900px;
+      border-radius: 42px;
+      padding: 8px;
+      background: linear-gradient(160deg, #2a2a2c 0%, #181818 50%, #0c0c0c 100%);
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.04) inset,
+        0 0 0 2px #000 inset,
+        0 28px 60px -12px rgba(0,0,0,0.45),
+        0 8px 20px -8px rgba(0,0,0,0.35);
+      isolation: isolate;
+    }
+    /* Pixel buttons — power + volume */
+    .btn-rail { position: absolute; width: 3px; background: #0a0a0c; border-radius: 2px; }
+    .btn-rail.right-1 { right: -2px; top: 160px; height: 60px; }
+    .btn-rail.right-2 { right: -2px; top: 230px; height: 90px; }
+
+    .screen {
+      position: relative;
+      width: 100%; height: 100%;
+      background: var(--bg);
+      border-radius: 36px;
+      overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+
+    /* Pixel 6 punch-hole — centered, small */
+    .punch-hole {
+      position: absolute;
+      top: 14px; left: 50%; transform: translateX(-50%);
+      width: 22px; height: 22px;
+      background: #000; border-radius: 50%;
+      z-index: 5;
+    }
+
+    /* Pixel status bar */
+    .statusbar {
+      flex: 0 0 32px;
+      padding: 12px 22px 0;
+      display: flex; align-items: center; justify-content: space-between;
+      font-family: var(--font-body);
+      font-size: 13px; font-weight: 500;
+      color: var(--fg);
+      letter-spacing: -0.005em;
+    }
+    .statusbar .right { display: inline-flex; align-items: center; gap: 6px; }
+    .statusbar svg { width: 15px; height: 11px; fill: var(--fg); }
+    .statusbar .wifi { width: 14px; height: 11px; }
+    .statusbar .battery { width: 22px; height: 11px; }
+
+    .content {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      padding: 8px 0 16px;
+    }
+    .content::-webkit-scrollbar { display: none; }
+
+    /* Material 3 gesture bar (Android 10+ nav) */
+    .gesture-bar { flex: 0 0 22px; position: relative; }
+    .gesture-bar::after {
+      content: '';
+      position: absolute;
+      left: 50%; bottom: 6px;
+      transform: translateX(-50%);
+      width: 120px; height: 4px;
+      background: var(--fg);
+      border-radius: 999px;
+      opacity: 0.45;
+    }
+
+    /* ─── Material 3 primitives ────────────────────────────────── */
+    .pad { padding-inline: 18px; }
+    .stack { display: flex; flex-direction: column; gap: 12px; }
+    .row { display: flex; align-items: center; gap: 10px; }
+    .row-between { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+
+    .greeting { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 0 0 4px; }
+    .h1 { font-family: var(--font-display); font-size: var(--fs-h1); letter-spacing: -0.018em; line-height: 1.18; margin: 0; font-weight: 600; }
+    .h2 { font-family: var(--font-display); font-size: var(--fs-h2); letter-spacing: -0.01em; line-height: 1.25; margin: 0; font-weight: 600; }
+    .h3 { font-size: var(--fs-h3); font-weight: 600; line-height: 1.3; margin: 0; }
+    .meta { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--muted); letter-spacing: 0.04em; }
+    .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+    .body-sm { font-size: var(--fs-sm); color: var(--fg-2); line-height: 1.5; }
+
+    /* Material AppBar (top) */
+    .appbar {
+      padding: 4px 8px 12px 8px;
+      display: flex; align-items: center; justify-content: space-between;
+      min-height: 56px;
+    }
+    .appbar .back-btn {
+      width: 40px; height: 40px;
+      display: grid; place-items: center;
+      color: var(--fg);
+      background: transparent; border: 0;
+      cursor: pointer;
+    }
+    .appbar .back-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+    .appbar .actions { display: flex; align-items: center; gap: 4px; }
+    .appbar .actions .ic {
+      width: 40px; height: 40px;
+      display: grid; place-items: center;
+      color: var(--fg);
+      background: transparent; border: 0;
+    }
+    .appbar .actions .ic svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+    }
+    .card.flat { background: transparent; border: 0; padding: 12px 0; border-top: 1px solid var(--border); border-radius: 0; }
+    .card.flat:first-child { border-top: 0; padding-top: 0; }
+    .card.dark { background: var(--fg); color: var(--bg); border-color: transparent; }
+    .card.dark .meta { color: rgba(255,255,255,0.6); }
+
+    .pill {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 9px;
+      background: color-mix(in oklab, var(--accent) 12%, transparent);
+      color: var(--accent);
+      border-radius: 999px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .pill.warm { background: color-mix(in oklab, #c96442 14%, transparent); color: #8a4a30; }
+    .pill.muted { background: var(--surface); color: var(--fg-2); border: 1px solid var(--border); }
+
+    .progress { height: 6px; background: color-mix(in oklab, var(--fg) 8%, transparent); border-radius: 999px; overflow: hidden; }
+    .progress > span { display: block; height: 100%; background: var(--accent); transition: width var(--motion-base) var(--ease-standard); }
+
+    /* Material 3 NavigationBar — pill-shaped selected indicator */
+    .navbar {
+      flex: 0 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      padding: 8px 12px 12px;
+      background: var(--surface);
+      border-top: 1px solid var(--border-soft);
+    }
+    .nav-tab {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      padding: 8px 0;
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 0.02em;
+      position: relative;
+    }
+    .nav-tab .ic {
+      width: 64px; height: 32px;
+      display: grid; place-items: center;
+      border-radius: 999px;
+      transition: background var(--motion-base) var(--ease-standard);
+    }
+    .nav-tab.active .ic { background: color-mix(in oklab, var(--accent) 18%, transparent); }
+    .nav-tab.active { color: var(--fg); font-weight: 600; }
+    .nav-tab svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+    .nav-tab.active svg { stroke-width: 2.2; }
+
+    /* Material 3 button — filled (rounded squircle) */
+    .btn-filled {
+      display: flex; align-items: center; justify-content: center;
+      width: 100%;
+      min-height: 48px;
+      padding: 12px 24px;
+      background: var(--accent);
+      color: var(--accent-on);
+      border: 0;
+      border-radius: 999px;
+      font: inherit;
+      font-size: var(--fs-body);
+      font-weight: 600;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: transform 100ms var(--ease-standard);
+    }
+    .btn-filled:active { transform: scale(0.97); }
+    .btn-filled::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: currentColor;
+      opacity: 0;
+      transition: opacity 180ms var(--ease-standard);
+      pointer-events: none;
+    }
+    .btn-filled:active::before { opacity: 0.10; }
+    .btn-tonal {
+      display: flex; align-items: center; justify-content: center;
+      width: 100%;
+      min-height: 48px;
+      padding: 12px 24px;
+      background: color-mix(in oklab, var(--accent) 14%, transparent);
+      color: var(--accent);
+      border: 0;
+      border-radius: 999px;
+      font: inherit;
+      font-size: var(--fs-body);
+      font-weight: 600;
+      position: relative;
+      overflow: hidden;
+      transition: transform 100ms var(--ease-standard);
+    }
+    .btn-tonal:active { transform: scale(0.97); }
+    .btn-tonal::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: currentColor;
+      opacity: 0;
+      transition: opacity 180ms var(--ease-standard);
+      pointer-events: none;
+    }
+    .btn-tonal:active::before { opacity: 0.10; }
+    .btn-outlined {
+      display: flex; align-items: center; justify-content: center;
+      width: 100%;
+      min-height: 48px;
+      padding: 12px 20px;
+      background: transparent;
+      color: var(--fg);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font: inherit;
+      position: relative;
+      overflow: hidden;
+      transition: transform 100ms var(--ease-standard);
+    }
+    .btn-outlined:active { transform: scale(0.97); }
+    .btn-outlined::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: currentColor;
+      opacity: 0;
+      transition: opacity 180ms var(--ease-standard);
+      pointer-events: none;
+    }
+    .btn-outlined:active::before { opacity: 0.06; }
+
+    /* Material 3 state-layer ripple for chips & nav tabs (≤ 200ms) */
+    .chip, .nav-tab, .card {
+      position: relative;
+      overflow: hidden;
+    }
+    .chip::before, .nav-tab::before, .card::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: currentColor;
+      opacity: 0;
+      transition: opacity 180ms var(--ease-standard);
+      pointer-events: none;
+    }
+    .chip:active::before { opacity: 0.08; }
+    .nav-tab:active::before { opacity: 0.10; }
+    .card:active::before { opacity: 0.04; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .btn-filled:active, .btn-tonal:active, .btn-outlined:active { transform: none; }
+      .chip::before, .nav-tab::before, .card::before { transition: none; }
+    }
+      font-size: var(--fs-body);
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <header class="page-top" data-od-id="page-top">
+    <div class="crumbs"><strong>清流</strong> · Android 原型 · 6 屏展示</div>
+    <a class="back" href="index.html" data-od-id="back-home">
+      <svg viewBox="0 0 24 24" aria-hidden><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+      返回首页
+    </a>
+  </header>
+
+  <section class="showcase-head" data-od-id="head">
+    <p class="eyebrow">02 / 02 PLATFORMS · PIXEL 6 (412 × 900)</p>
+    <h1>Android 上的清流</h1>
+    <p class="lede">
+      412 × 900 框，Punch-Hole 单摄中孔 · Material 3 NavigationBar 胶囊式选中态 · 系统 Gesture Bar。同一份温暖陪伴的设计语言，按 Android 的触控节奏重新展开。
+    </p>
+  </section>
+
+  <nav class="nav-strip" data-od-id="nav-strip">
+    <div class="nav-strip-inner">
+      <a href="#and-timer">01 首页</a>
+      <a href="#and-urge">02 渴望应对</a>
+      <a href="#and-t4">03 T4 呼吸</a>
+      <a href="#and-relapse">04 破戒支持</a>
+      <a href="#and-ai">05 AI 即时</a>
+      <a href="#and-data">06 效果数据</a>
+    </div>
+  </nav>
+
+  <main class="showcase">
+
+    <!-- ─── 01 Home ───────────────────────────────────────────── -->
+    <article class="stage" id="and-timer" data-od-id="and-01-timer">
+      <div class="caption"><span class="num">01</span> <strong>首页</strong> · 戒断计时器</div>
+      <div class="device">
+        <span class="btn-rail right-1" aria-hidden></span>
+        <span class="btn-rail right-2" aria-hidden></span>
+        <span class="punch-hole" aria-hidden></span>
+
+        <div class="screen">
+          <div class="statusbar"><span class="num">9:41</span><span class="right">
+            <svg viewBox="0 0 17 11"><path d="M8.5 1.5C5.5 1.5 2.7 2.6 0.5 4.6L2 6.1C3.8 4.5 6.1 3.6 8.5 3.6c2.4 0 4.7 0.9 6.5 2.5l1.5-1.5c-2.2-2-5-3.1-8-3.1zM3.5 7.6L5 9.1c1-0.9 2.2-1.4 3.5-1.4 1.3 0 2.5 0.5 3.5 1.4l1.5-1.5c-1.4-1.3-3.1-2-5-2-1.9 0-3.6 0.7-5 2zM6.5 10.6l2 2 2-2c-0.5-0.5-1.2-0.8-2-0.8s-1.5 0.3-2 0.8z"/></svg>
+            <svg viewBox="0 0 25 11"><rect x="0.5" y="0.5" width="21" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-opacity="0.45"/><rect x="22" y="3.5" width="1.5" height="4" rx="0.4" fill="currentColor" fill-opacity="0.45"/><rect x="2" y="2" width="18" height="7" rx="1.4"/></svg>
+          </span></div>
+
+          <main class="content">
+            <header class="appbar" style="padding-left: 12px; padding-right: 12px;">
+              <button class="ic" aria-label="Menu" style="width: 40px; height: 40px; display: grid; place-items: center; background: transparent; border: 0;">
+                <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; stroke: var(--fg); fill: none; stroke-width: 1.6;"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+              </button>
+              <div style="flex: 1; text-align: center;">
+                <p class="greeting" style="margin: 0;">周三 · 五月十六</p>
+              </div>
+              <button class="ic" aria-label="Search" style="width: 40px; height: 40px; display: grid; place-items: center; background: transparent; border: 0;">
+                <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; stroke: var(--fg); fill: none; stroke-width: 1.6;"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+              </button>
+            </header>
+
+            <section style="padding: 0 18px;" data-od-id="timer-hero">
+              <div class="card dark" style="padding: 26px 22px;">
+                <p class="meta" style="margin: 0 0 12px; color: rgba(255,255,255,0.6);">第 23 天 · 神经恢复进行中</p>
+                <div class="num" style="font-size: 56px; font-weight: 600; line-height: 1; letter-spacing: -0.03em; color: var(--bg);">23<span style="opacity:0.5; font-weight:400;">天</span> 16:42:08</div>
+                <div class="progress" style="margin-top: 18px; background: rgba(255,255,255,0.12);"><span style="width: 26%;"></span></div>
+                <div class="row-between" style="margin-top: 8px;">
+                  <span class="meta" style="color: rgba(255,255,255,0.55);">23 / 90</span>
+                  <span class="meta" style="color: rgba(255,255,255,0.55);">第 3 周</span>
+                </div>
+                <p style="margin: 14px 0 0; font-size: 13px; color: rgba(255,255,255,0.78); line-height: 1.45;">
+                  第 23 天。你还在。这就够了。
+                </p>
+              </div>
+            </section>
+
+            <section style="padding: 18px;" data-od-id="quick-actions">
+              <p class="meta" style="margin: 0 0 12px;">你今天可以做什么</p>
+              <div class="grid-2">
+                <a class="card" href="#and-urge" data-od-id="quick-urge" style="text-decoration: none; color: inherit; padding: 14px;">
+                  <div style="width: 32px; height: 32px; border-radius: 10px; background: color-mix(in oklab, var(--accent) 14%, transparent); display: grid; place-items: center; margin-bottom: 10px;">
+                    <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; stroke: var(--accent); fill: none; stroke-width: 1.7;"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+                  </div>
+                  <div class="h3" style="font-size: 14px;">渴望应对</div>
+                  <p style="font-size: 11px; color: var(--muted); margin: 2px 0 0;">≤ 3 秒可达</p>
+                </a>
+                <a class="card" href="#and-ai" data-od-id="quick-ai" style="text-decoration: none; color: inherit; padding: 14px;">
+                  <div style="width: 32px; height: 32px; border-radius: 10px; background: color-mix(in oklab, var(--accent) 14%, transparent); display: grid; place-items: center; margin-bottom: 10px;">
+                    <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; stroke: var(--accent); fill: none; stroke-width: 1.7;"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                  </div>
+                  <div class="h3" style="font-size: 14px;">AI 即时支持</div>
+                  <p style="font-size: 11px; color: var(--muted); margin: 2px 0 0;">按你的情境</p>
+                </a>
+                <a class="card" href="#and-data" data-od-id="quick-data" style="text-decoration: none; color: inherit; padding: 14px;">
+                  <div style="width: 32px; height: 32px; border-radius: 10px; background: color-mix(in oklab, var(--accent) 14%, transparent); display: grid; place-items: center; margin-bottom: 10px;">
+                    <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; stroke: var(--accent); fill: none; stroke-width: 1.7;"><path d="M3 3v18h18"/><path d="M7 14l3-3 4 4 6-7"/></svg>
+                  </div>
+                  <div class="h3" style="font-size: 14px;">进展</div>
+                  <p style="font-size: 11px; color: var(--muted); margin: 2px 0 0;">本周 + 全部</p>
+                </a>
+                <a class="card" href="#and-relapse" data-od-id="quick-relapse" style="text-decoration: none; color: inherit; padding: 14px;">
+                  <div style="width: 32px; height: 32px; border-radius: 10px; background: color-mix(in oklab, var(--accent) 14%, transparent); display: grid; place-items: center; margin-bottom: 10px;">
+                    <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; stroke: var(--accent); fill: none; stroke-width: 1.7;"><path d="M12 2 4 6v6c0 5 3.5 9 8 10 4.5-1 8-5 8-10V6l-8-4z"/></svg>
+                  </div>
+                  <div class="h3" style="font-size: 14px;">记录触发</div>
+                  <p style="font-size: 11px; color: var(--muted); margin: 2px 0 0;">留下线索</p>
+                </a>
+              </div>
+            </section>
+
+            <section style="padding: 0 18px;" data-od-id="today-stats">
+              <p class="meta" style="margin: 0 0 12px;">今天</p>
+              <div class="card flat row-between">
+                <span class="h3" style="font-size: 14px;">早晨承诺</span>
+                <span class="pill muted">已完成</span>
+              </div>
+              <div class="card flat row-between">
+                <span class="h3" style="font-size: 14px;">成功应对</span>
+                <span class="num" style="font-size: 14px;">1 次</span>
+              </div>
+              <div class="card flat row-between">
+                <span class="h3" style="font-size: 14px;">触发记录</span>
+                <span class="num" style="font-size: 14px;">1 次</span>
+              </div>
+            </section>
+          </main>
+
+          <nav class="navbar" data-od-id="navbar-home">
+            <a class="nav-tab active"><span class="ic"><svg viewBox="0 0 24 24"><path d="M3 12 12 3l9 9"/><path d="M5 10v10h14V10"/></svg></span>今日</a>
+            <a class="nav-tab"><span class="ic"><svg viewBox="0 0 24 24"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg></span>渴望</a>
+            <a class="nav-tab"><span class="ic"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/><path d="M12 6v6l4 2"/></svg></span>记录</a>
+            <a class="nav-tab"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg></span>我的</a>
+          </nav>
+
+          <div class="gesture-bar" aria-hidden></div>
+        </div>
+      </div>
+    </article>
+
+    <!-- ─── 02 Urge Panel ─────────────────────────────────────── -->
+    <article class="stage" id="and-urge" data-od-id="and-02-urge">
+      <div class="caption"><span class="num">02</span> <strong>渴望应对</strong></div>
+      <div class="device">
+        <span class="btn-rail right-1" aria-hidden></span>
+        <span class="btn-rail right-2" aria-hidden></span>
+        <span class="punch-hole" aria-hidden></span>
+
+        <div class="screen">
+          <div class="statusbar"><span class="num">9:41</span><span class="right">
+            <svg viewBox="0 0 17 11"><path d="M8.5 1.5C5.5 1.5 2.7 2.6 0.5 4.6L2 6.1C3.8 4.5 6.1 3.6 8.5 3.6c2.4 0 4.7 0.9 6.5 2.5l1.5-1.5c-2.2-2-5-3.1-8-3.1zM3.5 7.6L5 9.1c1-0.9 2.2-1.4 3.5-1.4 1.3 0 2.5 0.5 3.5 1.4l1.5-1.5c-1.4-1.3-3.1-2-5-2-1.9 0-3.6 0.7-5 2zM6.5 10.6l2 2 2-2c-0.5-0.5-1.2-0.8-2-0.8s-1.5 0.3-2 0.8z"/></svg>
+            <svg viewBox="0 0 25 11"><rect x="0.5" y="0.5" width="21" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-opacity="0.45"/><rect x="22" y="3.5" width="1.5" height="4" rx="0.4" fill="currentColor" fill-opacity="0.45"/><rect x="2" y="2" width="18" height="7" rx="1.4"/></svg>
+          </span></div>
+
+          <main class="content">
+            <header class="appbar">
+              <button class="back-btn" aria-label="关闭">
+                <svg viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+              </button>
+              <div></div>
+              <button class="actions" style="background: transparent; border: 0; padding: 8px;" aria-label="关闭">
+                <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; stroke: var(--fg); fill: none; stroke-width: 1.8;"><path d="M18 6 6 18M6 6l12 12"/></svg>
+              </button>
+            </header>
+
+            <section class="pad" style="padding-top: 4px;" data-od-id="urge-strength">
+              <h1 class="h1">渴望来袭？</h1>
+              <p class="meta" style="margin: 6px 0 18px;">先告诉我，此刻的强度</p>
+              <div class="row-between" style="margin-bottom: 6px;">
+                <span class="body-sm">微弱</span>
+                <span class="body-sm">强烈</span>
+              </div>
+              <div style="position: relative; height: 56px;">
+                <input type="range" min="1" max="10" value="7" data-od-id="urge-slider" style="appearance: none; width: 100%; height: 56px; background: transparent; outline: none; cursor: pointer;">
+              </div>
+              <div class="row-between" style="margin-top: 6px;">
+                <span class="num" style="font-size: 36px; font-weight: 600; letter-spacing: -0.02em; color: var(--accent);">7</span>
+                <span class="body-sm">中等偏高</span>
+              </div>
+            </section>
+
+            <section class="pad" data-od-id="tech-recommend" style="margin-top: 10px;">
+              <p class="meta" style="margin: 0 0 12px;">在此强度下，这些会有效</p>
+
+              <a class="card" href="#and-t4" data-od-id="tech-t11" style="display: block; padding: 14px 16px; text-decoration: none; color: inherit; margin-bottom: 10px;">
+                <div class="row-between" style="margin-bottom: 8px;">
+                  <span class="pill warm">最优先</span>
+                  <span class="meta">45 秒 · 双阶段</span>
+                </div>
+                <div class="h3" style="margin-bottom: 4px;">T11 · 冷水洗脸 + 自我对话</div>
+                <p class="body-sm">物理冷激活先于认知干预。后半段是对着镜子说三句话。</p>
+              </a>
+
+              <a class="card" href="#and-t4" data-od-id="tech-t4" style="display: block; padding: 14px 16px; text-decoration: none; color: inherit; margin-bottom: 10px;">
+                <div class="row-between" style="margin-bottom: 8px;">
+                  <span class="pill">高优先</span>
+                  <span class="meta">90 秒 · 6 轮</span>
+                </div>
+                <div class="h3" style="margin-bottom: 4px;">T4 · 90 秒呼吸法</div>
+                <p class="body-sm">呼气延长 → 副交感神经激活，刚好覆盖一个完整渴望周期。</p>
+              </a>
+
+              <a class="card" data-od-id="tech-t5" style="display: block; padding: 14px 16px; margin-bottom: 10px;">
+                <div class="row-between" style="margin-bottom: 8px;">
+                  <span class="pill muted">高优先</span>
+                  <span class="meta">5 步 · ~60 秒</span>
+                </div>
+                <div class="h3" style="margin-bottom: 4px;">T5 · 感官接地 54321</div>
+                <p class="body-sm">说出 5 件看见的、4 件能触摸的……把前额叶请回来。</p>
+              </a>
+
+              <button class="card" style="display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 16px; text-align: left; cursor: pointer; border: 1px dashed var(--border); margin-top: 6px;">
+                <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--surface-warm); display: grid; place-items: center;">
+                  <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; stroke: var(--fg); fill: none; stroke-width: 1.7;"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+                </div>
+                <div style="flex: 1;">
+                  <div class="h3" style="font-size: 14px;">随机抽卡</div>
+                  <div style="font-size: 11px; color: var(--muted); margin: 2px 0 0;">让系统替你翻一张</div>
+                </div>
+                <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; stroke: var(--muted); fill: none; stroke-width: 1.7;"><path d="M9 6l6 6-6 6"/></svg>
+              </button>
+
+              <button style="width: 100%; background: transparent; border: 0; color: var(--accent); padding: 12px 0; font: inherit; font-size: 13px;">查看全部 11 种技术 ▾</button>
+            </section>
+
+            <section class="pad" data-od-id="reframe" style="margin-top: 6px;">
+              <p class="meta" style="margin: 0 0 10px;">写下此刻的想法（可选）</p>
+              <div class="card" style="padding: 14px 16px;">
+                <p style="margin: 0; font-size: 13px; font-style: italic; color: var(--fg); line-height: 1.5;">
+                  "晚上 11 点，很累，刚下班到家……"
+                </p>
+                <div class="row-between" style="margin-top: 10px;">
+                  <span class="meta">已自动加密 · 仅你可见</span>
+                  <span class="num" style="font-size: 11px; color: var(--accent);">继续 ▸</span>
+                </div>
+              </div>
+            </section>
+
+            <section class="pad" style="margin-top: 20px;">
+              <button class="btn-tonal" style="background: color-mix(in oklab, var(--success) 14%, transparent); color: var(--success);">✓ 成功应对 · 记录这次</button>
+            </section>
+          </main>
+
+          <div class="gesture-bar" aria-hidden></div>
+        </div>
+      </div>
+    </article>
+
+    <!-- ─── 03 T4 Breathing ───────────────────────────────────── -->
+    <article class="stage" id="and-t4" data-od-id="and-03-t4">
+      <div class="caption"><span class="num">03</span> <strong>T4</strong> · 90 秒呼吸法</div>
+      <div class="device">
+        <span class="btn-rail right-1" aria-hidden></span>
+        <span class="btn-rail right-2" aria-hidden></span>
+        <span class="punch-hole" aria-hidden></span>
+
+        <div class="screen">
+          <div class="statusbar"><span class="num">9:41</span><span class="right">
+            <svg viewBox="0 0 17 11"><path d="M8.5 1.5C5.5 1.5 2.7 2.6 0.5 4.6L2 6.1C3.8 4.5 6.1 3.6 8.5 3.6c2.4 0 4.7 0.9 6.5 2.5l1.5-1.5c-2.2-2-5-3.1-8-3.1zM3.5 7.6L5 9.1c1-0.9 2.2-1.4 3.5-1.4 1.3 0 2.5 0.5 3.5 1.4l1.5-1.5c-1.4-1.3-3.1-2-5-2-1.9 0-3.6 0.7-5 2zM6.5 10.6l2 2 2-2c-0.5-0.5-1.2-0.8-2-0.8s-1.5 0.3-2 0.8z"/></svg>
+            <svg viewBox="0 0 25 11"><rect x="0.5" y="0.5" width="21" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-opacity="0.45"/><rect x="22" y="3.5" width="1.5" height="4" rx="0.4" fill="currentColor" fill-opacity="0.45"/><rect x="2" y="2" width="18" height="7" rx="1.4"/></svg>
+          </span></div>
+
+          <main class="content" style="padding: 0;">
+            <header class="appbar">
+              <button class="back-btn" aria-label="返回">
+                <svg viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+              </button>
+              <div style="text-align: center; flex: 1;">
+                <p class="greeting" style="margin: 0;">T4 · 高优先</p>
+                <h1 class="h2" style="font-size: 16px; margin-top: 2px;">90 秒呼吸法</h1>
+              </div>
+              <button class="ic" aria-label="关闭" style="width: 40px; height: 40px; display: grid; place-items: center; background: transparent; border: 0;">
+                <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; stroke: var(--fg); fill: none; stroke-width: 1.8;"><path d="M18 6 6 18M6 6l12 12"/></svg>
+              </button>
+            </header>
+
+            <section data-od-id="breath-stage" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 20px 28px; background: var(--surface-warm); min-height: 500px;">
+              <div class="meta" style="margin-bottom: 18px;">第 <span class="num">1</span> / 6 轮 · 还剩 75 秒</div>
+
+              <div style="position: relative; width: 280px; height: 280px; display: grid; place-items: center;">
+                <div id="and-t4-ring" style="position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle at 50% 50%, color-mix(in oklab, var(--accent) 32%, transparent) 0%, color-mix(in oklab, var(--accent) 18%, transparent) 35%, color-mix(in oklab, var(--accent) 6%, transparent) 70%, transparent 100%); transform: scale(0.6); transition: transform 4s cubic-bezier(0.4,0,0.6,1);"></div>
+                <div style="position: relative; width: 180px; height: 180px; border-radius: 50%; background: var(--bg); display: grid; place-items: center; box-shadow: 0 4px 30px rgba(0,0,0,0.05);">
+                  <div style="text-align: center;">
+                    <div class="meta" id="and-t4-phase" style="margin-bottom: 6px;">吸气</div>
+                    <div class="num" id="and-t4-countdown" style="font-size: 52px; font-weight: 600; letter-spacing: -0.03em;">4</div>
+                  </div>
+                </div>
+              </div>
+
+              <p class="meta" style="margin-top: 22px; text-align: center;">吸气 4 · 屏息 2 · 呼气 15</p>
+            </section>
+
+            <section class="pad" data-od-id="breath-progress" style="margin-top: 24px;">
+              <div class="row" style="gap: 6px; justify-content: center;">
+                <span class="num" style="display: inline-block; width: 36px; height: 4px; border-radius: 4px; background: var(--accent);"></span>
+                <span style="display: inline-block; width: 36px; height: 4px; border-radius: 4px; background: var(--border);"></span>
+                <span style="display: inline-block; width: 36px; height: 4px; border-radius: 4px; background: var(--border);"></span>
+                <span style="display: inline-block; width: 36px; height: 4px; border-radius: 4px; background: var(--border);"></span>
+                <span style="display: inline-block; width: 36px; height: 4px; border-radius: 4px; background: var(--border);"></span>
+                <span style="display: inline-block; width: 36px; height: 4px; border-radius: 4px; background: var(--border);"></span>
+              </div>
+            </section>
+
+            <section class="pad" style="margin-top: 22px;">
+              <div class="card" style="padding: 14px 16px;">
+                <div class="row" style="gap: 10px; align-items: flex-start;">
+                  <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; stroke: var(--accent); fill: none; stroke-width: 1.7; flex-shrink: 0; margin-top: 2px;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                  <div>
+                    <div class="h3" style="font-size: 13px; font-weight: 600;">副交感神经激活中</div>
+                    <p style="font-size: 12px; color: var(--muted); margin: 2px 0 0; line-height: 1.45;">呼气延长会降低静息心率，帮前额叶重新夺回主动权。</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="pad" style="margin-top: 22px;">
+              <button class="btn-outlined">结束 · 我感觉好一点了</button>
+            </section>
+          </main>
+
+          <div class="gesture-bar" aria-hidden></div>
+        </div>
+      </div>
+    </article>
+
+    <!-- ─── 04 Relapse Support ────────────────────────────────── -->
+    <article class="stage" id="and-relapse" data-od-id="and-04-relapse">
+      <div class="caption"><span class="num">04</span> <strong>破戒后支持</strong></div>
+      <div class="device">
+        <span class="btn-rail right-1" aria-hidden></span>
+        <span class="btn-rail right-2" aria-hidden></span>
+        <span class="punch-hole" aria-hidden></span>
+
+        <div class="screen">
+          <div class="statusbar"><span class="num">9:41</span><span class="right">
+            <svg viewBox="0 0 17 11"><path d="M8.5 1.5C5.5 1.5 2.7 2.6 0.5 4.6L2 6.1C3.8 4.5 6.1 3.6 8.5 3.6c2.4 0 4.7 0.9 6.5 2.5l1.5-1.5c-2.2-2-5-3.1-8-3.1zM3.5 7.6L5 9.1c1-0.9 2.2-1.4 3.5-1.4 1.3 0 2.5 0.5 3.5 1.4l1.5-1.5c-1.4-1.3-3.1-2-5-2-1.9 0-3.6 0.7-5 2zM6.5 10.6l2 2 2-2c-0.5-0.5-1.2-0.8-2-0.8s-1.5 0.3-2 0.8z"/></svg>
+            <svg viewBox="0 0 25 11"><rect x="0.5" y="0.5" width="21" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-opacity="0.45"/><rect x="22" y="3.5" width="1.5" height="4" rx="0.4" fill="currentColor" fill-opacity="0.45"/><rect x="2" y="2" width="18" height="7" rx="1.4"/></svg>
+          </span></div>
+
+          <main class="content">
+            <header class="appbar">
+              <button class="back-btn" aria-label="返回">
+                <svg viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+              </button>
+              <div></div>
+              <button class="ic" aria-label="关闭" style="background: transparent; border: 0; padding: 8px;">
+                <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; stroke: var(--fg); fill: none; stroke-width: 1.8;"><path d="M18 6 6 18M6 6l12 12"/></svg>
+              </button>
+            </header>
+
+            <section style="padding: 0 18px;">
+              <p class="greeting" style="margin: 0 0 10px;">让我们理解这次发生了什么</p>
+              <div class="row-between" style="margin-bottom: 10px;">
+                <p class="meta">第 3 / 5 题 · 约 2 分钟</p>
+                <p class="meta" style="color: var(--accent);">已保留 · 23 天</p>
+              </div>
+              <div class="progress" style="height: 4px; background: var(--surface);"><span style="width: 60%;"></span></div>
+            </section>
+
+            <section style="padding: 0 18px; margin-top: 26px;" data-od-id="q-current">
+              <h2 class="h2" style="margin-bottom: 8px; line-height: 1.25;">那一刻，你试过哪些东西？</h2>
+              <p class="body-sm">慢慢来 · 你想到什么就选什么 · 哪怕只是"我没应对"也算数</p>
+            </section>
+
+            <section style="padding: 0 16px; margin-top: 18px;">
+              <div class="stack-tight" data-od-id="q-chips">
+                <button class="chip selected" data-od-id="and-chip-breath" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: color-mix(in oklab, var(--accent) 12%, transparent); border: 1.5px solid var(--accent); border-radius: 14px; font: inherit; font-size: 14px; font-weight: 500; color: var(--accent); width: 100%; text-align: left;">
+                  <span>90 秒呼吸法 (T4)</span>
+                  <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2;"><path d="M5 13l4 4L19 7"/></svg>
+                </button>
+                <button class="chip selected" data-od-id="and-chip-cold" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: color-mix(in oklab, var(--accent) 12%, transparent); border: 1.5px solid var(--accent); border-radius: 14px; font: inherit; font-size: 14px; font-weight: 500; color: var(--accent); width: 100%; text-align: left;">
+                  <span>冷水洗脸</span>
+                  <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2;"><path d="M5 13l4 4L19 7"/></svg>
+                </button>
+                <button class="chip" data-od-id="and-chip-ground" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 14px; font: inherit; font-size: 14px; color: var(--fg); width: 100%; text-align: left;">
+                  <span>感官接地 54321 (T5)</span>
+                  <span style="width: 18px;"></span>
+                </button>
+                <button class="chip" data-od-id="and-chip-exercise" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 14px; font: inherit; font-size: 14px; color: var(--fg); width: 100%; text-align: left;">
+                  <span>20 个深蹲</span>
+                  <span style="width: 18px;"></span>
+                </button>
+                <button class="chip" data-od-id="and-chip-ai" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 14px; font: inherit; font-size: 14px; color: var(--fg); width: 100%; text-align: left;">
+                  <span>找 AI 聊了一会</span>
+                  <span style="width: 18px;"></span>
+                </button>
+                <button class="chip" data-od-id="and-chip-none" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 14px; font: inherit; font-size: 14px; color: var(--fg); width: 100%; text-align: left;">
+                  <span style="font-style: italic;">没有特别应对</span>
+                  <span style="width: 18px;"></span>
+                </button>
+              </div>
+            </section>
+
+            <section style="padding: 0 18px; margin-top: 18px;">
+              <p style="font-size: 12px; color: var(--muted); line-height: 1.5; margin: 0; padding: 12px 14px; background: var(--surface-warm); border-radius: 10px;">
+                破戒不是失败 —— 它只是还没写完的笔记。每一次都让你更清楚下次能做的微调。
+              </p>
+            </section>
+
+            <section style="padding: 0 18px; margin-top: 22px;">
+              <div class="row" style="gap: 10px;">
+                <button class="btn-outlined" style="flex: 1;">上一步</button>
+                <button class="btn-filled" style="flex: 2;">继续 →</button>
+              </div>
+            </section>
+          </main>
+
+          <div class="gesture-bar" aria-hidden></div>
+        </div>
+      </div>
+    </article>
+
+    <!-- ─── 05 AI Instant Support ─────────────────────────────── -->
+    <article class="stage" id="and-ai" data-od-id="and-05-ai">
+      <div class="caption"><span class="num">05</span> <strong>AI 即时支持</strong></div>
+      <div class="device">
+        <span class="btn-rail right-1" aria-hidden></span>
+        <span class="btn-rail right-2" aria-hidden></span>
+        <span class="punch-hole" aria-hidden></span>
+
+        <div class="screen">
+          <div class="statusbar"><span class="num">9:41</span><span class="right">
+            <svg viewBox="0 0 17 11"><path d="M8.5 1.5C5.5 1.5 2.7 2.6 0.5 4.6L2 6.1C3.8 4.5 6.1 3.6 8.5 3.6c2.4 0 4.7 0.9 6.5 2.5l1.5-1.5c-2.2-2-5-3.1-8-3.1zM3.5 7.6L5 9.1c1-0.9 2.2-1.4 3.5-1.4 1.3 0 2.5 0.5 3.5 1.4l1.5-1.5c-1.4-1.3-3.1-2-5-2-1.9 0-3.6 0.7-5 2zM6.5 10.6l2 2 2-2c-0.5-0.5-1.2-0.8-2-0.8s-1.5 0.3-2 0.8z"/></svg>
+            <svg viewBox="0 0 25 11"><rect x="0.5" y="0.5" width="21" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-opacity="0.45"/><rect x="22" y="3.5" width="1.5" height="4" rx="0.4" fill="currentColor" fill-opacity="0.45"/><rect x="2" y="2" width="18" height="7" rx="1.4"/></svg>
+          </span></div>
+
+          <main class="content">
+            <header class="appbar">
+              <button class="back-btn" aria-label="返回">
+                <svg viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+              </button>
+              <div style="text-align: center; flex: 1;">
+                <p class="greeting" style="margin: 0;">现在</p>
+                <h1 class="h2" style="font-size: 16px; margin-top: 2px;">清流 · 即时支持</h1>
+              </div>
+              <button class="ic" aria-label="隐私" style="background: transparent; border: 0;">
+                <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; stroke: var(--fg); fill: none; stroke-width: 1.8;"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+              </button>
+            </header>
+
+            <section style="padding: 4px 16px 8px;">
+              <div style="display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: color-mix(in oklab, var(--success) 10%, transparent); border-radius: 999px; width: fit-content; margin: 0 auto;">
+                <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--success);"></span>
+                <span style="font-size: 11px; color: var(--success);">本地处理 · 不留存 · 不替代专业咨询</span>
+              </div>
+            </section>
+
+            <section style="padding: 0 16px; display: flex; flex-direction: column; gap: 12px;" data-od-id="ai-chat">
+              <div style="display: flex; gap: 8px; align-items: flex-end;">
+                <div style="width: 28px; height: 28px; border-radius: 8px; background: var(--surface); display: grid; place-items: center; flex-shrink: 0;">
+                  <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; stroke: var(--fg); fill: none; stroke-width: 1.7;"><path d="M12 2a4 4 0 0 1 4 4v2a4 4 0 0 1-8 0V6a4 4 0 0 1 4-4zM4 14h16M6 14l2 8h8l2-8"/></svg>
+                </div>
+                <div style="max-width: 78%; padding: 12px 14px; background: var(--surface); border-radius: 16px 16px 16px 4px; font-size: 13px; line-height: 1.45;">
+                  嗨，我在这里。深夜 11 点、刚到家、累得像被掏空 —— 这种时刻最难熬。先别急着给自己下定义。
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 8px; align-items: flex-end;">
+                <div style="width: 28px; height: 28px; flex-shrink: 0;"></div>
+                <div style="max-width: 78%; padding: 12px 14px; background: var(--surface); border-radius: 16px 16px 16px 4px; font-size: 13px; line-height: 1.45;">
+                  你愿意告诉我，是工作的那种累，还是一种空？两种我都陪得了。
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 8px; align-items: flex-end; justify-content: flex-end;">
+                <div style="max-width: 78%; padding: 12px 14px; background: color-mix(in oklab, var(--accent) 14%, transparent); color: var(--fg); border-radius: 16px 16px 4px 16px; font-size: 13px; line-height: 1.45;">
+                  工作。一整天都被打断，回家没力气做任何决定。
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 8px; align-items: flex-end;">
+                <div style="width: 28px; height: 28px; border-radius: 8px; background: var(--surface); display: grid; place-items: center; flex-shrink: 0;">
+                  <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; stroke: var(--fg); fill: none; stroke-width: 1.7;"><path d="M12 2a4 4 0 0 1 4 4v2a4 4 0 0 1-8 0V6a4 4 0 0 1 4-4zM4 14h16M6 14l2 8h8l2-8"/></svg>
+                </div>
+                <div style="max-width: 78%; padding: 12px 14px; background: var(--surface); border-radius: 16px 16px 16px 4px; font-size: 13px; line-height: 1.45;">
+                  嗯，听到你了。"决策疲劳"是个真东西 —— 不是矫情，是大脑真的电量不足。我想陪你做一件小事，让身体先慢一拍：
+                </div>
+              </div>
+
+              <a class="card" href="#and-t4" data-od-id="ai-suggest-t4" style="display: block; padding: 12px 14px; margin-left: 36px; text-decoration: none; color: inherit;">
+                <div class="row-between" style="margin-bottom: 4px;">
+                  <span class="pill warm">为你推荐</span>
+                  <span class="num" style="font-size: 11px; color: var(--accent);">立刻开始 →</span>
+                </div>
+                <div class="h3" style="font-size: 13px;">T4 · 90 秒呼吸法</div>
+                <p style="margin: 4px 0 0; font-size: 12px; color: var(--muted); line-height: 1.4;">用一次完整的 90 秒让副交感神经先接管。</p>
+              </a>
+
+              <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-left: 36px;">
+                <button style="padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; font: inherit; font-size: 12px; color: var(--fg);">换一种</button>
+                <button style="padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; font: inherit; font-size: 12px; color: var(--fg);">我想先聊一会</button>
+                <button style="padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; font: inherit; font-size: 12px; color: var(--fg);">记下这次</button>
+              </div>
+            </section>
+
+            <section style="margin: 16px 16px 8px; padding-top: 14px; border-top: 1px solid var(--border-soft); display: flex; gap: 8px; align-items: center;">
+              <input type="text" placeholder="告诉我此刻的样子…" style="flex: 1; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 24px; font: inherit; font-size: 13px; outline: none;">
+              <button style="width: 40px; height: 40px; border-radius: 50%; background: var(--accent); border: 0; display: grid; place-items: center;">
+                <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; stroke: #fff; fill: none; stroke-width: 2;"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+              </button>
+            </section>
+          </main>
+
+          <div class="gesture-bar" aria-hidden></div>
+        </div>
+      </div>
+    </article>
+
+    <!-- ─── 06 Effect Dashboard ───────────────────────────────── -->
+    <article class="stage" id="and-data" data-od-id="and-06-dashboard">
+      <div class="caption"><span class="num">06</span> <strong>效果数据</strong></div>
+      <div class="device">
+        <span class="btn-rail right-1" aria-hidden></span>
+        <span class="btn-rail right-2" aria-hidden></span>
+        <span class="punch-hole" aria-hidden></span>
+
+        <div class="screen">
+          <div class="statusbar"><span class="num">9:41</span><span class="right">
+            <svg viewBox="0 0 17 11"><path d="M8.5 1.5C5.5 1.5 2.7 2.6 0.5 4.6L2 6.1C3.8 4.5 6.1 3.6 8.5 3.6c2.4 0 4.7 0.9 6.5 2.5l1.5-1.5c-2.2-2-5-3.1-8-3.1zM3.5 7.6L5 9.1c1-0.9 2.2-1.4 3.5-1.4 1.3 0 2.5 0.5 3.5 1.4l1.5-1.5c-1.4-1.3-3.1-2-5-2-1.9 0-3.6 0.7-5 2zM6.5 10.6l2 2 2-2c-0.5-0.5-1.2-0.8-2-0.8s-1.5 0.3-2 0.8z"/></svg>
+            <svg viewBox="0 0 25 11"><rect x="0.5" y="0.5" width="21" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-opacity="0.45"/><rect x="22" y="3.5" width="1.5" height="4" rx="0.4" fill="currentColor" fill-opacity="0.45"/><rect x="2" y="2" width="18" height="7" rx="1.4"/></svg>
+          </span></div>
+
+          <main class="content">
+            <header class="appbar">
+              <button class="back-btn" aria-label="返回">
+                <svg viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+              </button>
+              <div style="text-align: center; flex: 1;">
+                <h1 class="h2" style="font-size: 17px;">进展</h1>
+              </div>
+              <button class="ic" aria-label="筛选" style="background: transparent; border: 0;">
+                <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; stroke: var(--fg); fill: none; stroke-width: 1.8;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+              </button>
+            </header>
+
+            <section style="padding: 0 18px;" data-od-id="week-stats">
+              <p class="greeting" style="margin: 0 0 12px;">本周 · 5 月 11 – 17</p>
+              <div class="grid-3">
+                <div class="card" style="padding: 14px 12px;">
+                  <div class="num" style="font-size: 28px; font-weight: 600;">3</div>
+                  <div class="meta" style="font-size: 10px; margin-top: 2px;">成功应对</div>
+                </div>
+                <div class="card" style="padding: 14px 12px;">
+                  <div class="num" style="font-size: 28px; font-weight: 600;">5</div>
+                  <div class="meta" style="font-size: 10px; margin-top: 2px;">触发记录</div>
+                </div>
+                <div class="card" style="padding: 14px 12px;">
+                  <div class="num" style="font-size: 28px; font-weight: 600; color: var(--success);">5/7</div>
+                  <div class="meta" style="font-size: 10px; margin-top: 2px;">早晨承诺</div>
+                </div>
+              </div>
+            </section>
+
+            <section style="padding: 0 18px; margin-top: 18px;" data-od-id="recovery-progress">
+              <div class="card" style="padding: 18px;">
+                <div class="row-between" style="margin-bottom: 12px;">
+                  <p class="meta">神经恢复进度</p>
+                  <span class="pill muted">第 3 周</span>
+                </div>
+                <div class="row" style="gap: 14px; align-items: baseline; margin-bottom: 12px;">
+                  <span class="num" style="font-size: 36px; font-weight: 600;">23</span>
+                  <span class="meta" style="font-size: 13px;">/ 90 天</span>
+                </div>
+                <div class="progress"><span style="width: 26%;"></span></div>
+                <p style="margin: 12px 0 0; font-size: 13px; color: var(--fg-2); line-height: 1.5;">
+                  你的神经系统正在慢慢习惯一种新的安静。<strong>每多撑过一天</strong>，它就长出一点新的连接。
+                </p>
+              </div>
+            </section>
+
+            <section style="padding: 0 18px; margin-top: 14px;" data-od-id="recognition-anchor">
+              <div style="background: linear-gradient(135deg, color-mix(in oklab, var(--accent) 8%, var(--surface-warm)) 0%, var(--surface-warm) 100%); border-radius: 18px; padding: 16px 18px;">
+                <p class="meta" style="margin: 0 0 8px; color: var(--accent);">本周你做到了</p>
+                <p style="margin: 0; font-family: var(--font-display); font-size: 17px; font-weight: 600; line-height: 1.45; color: var(--fg); letter-spacing: -0.012em;">
+                  上周三凌晨 1 点 23 分，你撑过去了。<br/>
+                  本周你陪自己走过了 4 个难熬的夜晚。
+                </p>
+              </div>
+            </section>
+
+            <section style="padding: 0 18px; margin-top: 18px;" data-od-id="trigger-heatmap">
+              <div class="row-between" style="margin-bottom: 10px;">
+                <p class="meta">触发 · 情绪热力图</p>
+                <span class="meta">近 14 天</span>
+              </div>
+              <div class="card" style="padding: 14px;">
+                <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;">
+                  <div style="aspect-ratio: 1; border-radius: 4px; background: color-mix(in oklab, var(--accent) 8%, var(--surface));"></div>
+                  <div style="aspect-ratio: 1; border-radius: 4px; background: color-mix(in oklab, var(--accent) 12%, var(--surface));"></div>
+                  <div style="aspect-ratio: 1; border-radius: 4px; background: color-mix(in oklab, var(--accent) 4%, var(--surface));"></div>
+                  <div style="aspect-ratio: 1; border-radius: 4px; background: color-mix(in oklab, var(--accent) 24%, var(--surface));"></div>
+                  <div style="aspect-ratio: 1; border-radius: 4px; background: color-mix(in oklab, var(--accent) 12%, var(--surface));"></div>
+                  <div style="aspect-ratio: 1; border-radius: 4px; background: color-mix(in oklab, var(--accent) 32%, var(--surface));"></div>
+                  <div style="aspect-ratio: 1; border-radius: 4px; background: color-mix(in oklab, var(--accent) 8%, var(--surface));"></div>
+                  <div style="aspect-ratio: 1; border-radius: 4px; background: color-mix(in oklab, var(--accent) 16%, var(--surface));"></div>
+                  <div style="aspect-ratio: 1; border-radius: 4px; background: color-mix(in oklab, var(--accent) 12%, var(--surface));"></div>
+                  <div style="aspect-ratio: 1; border-radius: 4px; background: color-mix(in oklab, var(--accent) 4%, var(--surface));"></div>
+                  <div style="aspect-ratio: 1; border-radius: 4px; background: color-mix(in oklab, var(--accent) 28%, var(--surface));"></div>
+                  <div style="aspect-ratio: 1; border-radius: 4px; background: color-mix(in oklab, var(--accent) 16%, var(--surface));"></div>
+                  <div style="aspect-ratio: 1; border-radius: 4px; background: color-mix(in oklab, var(--accent) 40%, var(--surface));"></div>
+                  <div style="aspect-ratio: 1; border-radius: 4px; background: color-mix(in oklab, var(--accent) 8%, var(--surface));"></div>
+                </div>
+                <div class="row-between" style="margin-top: 10px;">
+                  <span class="meta">焦虑 + 孤独组合最常触发</span>
+                  <span class="num meta" style="color: var(--accent);">查看模式 →</span>
+                </div>
+              </div>
+            </section>
+
+            <section style="padding: 0 18px; margin-top: 18px;" data-od-id="milestones">
+              <p class="meta" style="margin: 0 0 10px;">里程碑</p>
+              <div class="card" style="padding: 16px;">
+                <div style="display: flex; align-items: flex-start; gap: 10px;">
+                  <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                    <span style="width: 22px; height: 22px; border-radius: 50%; background: var(--success); display: grid; place-items: center;">
+                      <svg viewBox="0 0 24 24" style="width: 14px; height: 14px; stroke: #fff; fill: none; stroke-width: 2.5;"><path d="M5 13l4 4L19 7"/></svg>
+                    </span>
+                    <span style="width: 2px; flex: 1; min-height: 14px; background: var(--border);"></span>
+                    <span style="width: 22px; height: 22px; border-radius: 50%; background: var(--success); display: grid; place-items: center;">
+                      <svg viewBox="0 0 24 24" style="width: 14px; height: 14px; stroke: #fff; fill: none; stroke-width: 2.5;"><path d="M5 13l4 4L19 7"/></svg>
+                    </span>
+                    <span style="width: 2px; flex: 1; min-height: 14px; background: var(--border);"></span>
+                    <span style="width: 22px; height: 22px; border-radius: 50%; background: var(--accent); display: grid; place-items: center; box-shadow: 0 0 0 4px color-mix(in oklab, var(--accent) 18%, transparent);">
+                      <span style="width: 6px; height: 6px; border-radius: 50%; background: #fff;"></span>
+                    </span>
+                    <span style="width: 2px; flex: 1; min-height: 14px; background: var(--border);"></span>
+                    <span style="width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--border);"></span>
+                    <span style="width: 2px; flex: 1; min-height: 14px; background: var(--border);"></span>
+                    <span style="width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--border);"></span>
+                    <span style="width: 2px; flex: 1; min-height: 14px; background: var(--border);"></span>
+                    <span style="width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--border);"></span>
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 14px; flex: 1; padding-top: 2px;">
+                    <div><div class="h3" style="font-size: 13px;">第 1 天</div><div class="meta">急性期 · 已达成</div></div>
+                    <div><div class="h3" style="font-size: 13px;">第 7 天</div><div class="meta">早期 · 已达成</div></div>
+                    <div style="background: color-mix(in oklab, var(--accent) 8%, transparent); padding: 8px 10px; border-radius: 8px; margin: -4px -10px;">
+                      <div class="h3" style="font-size: 13px; color: var(--accent);">第 14 天</div>
+                      <div class="meta" style="color: var(--accent);">今天 · 自我效能感建立</div>
+                    </div>
+                    <div><div class="h3" style="font-size: 13px; color: var(--muted);">第 30 天</div><div class="meta">神经递质初步恢复</div></div>
+                    <div><div class="h3" style="font-size: 13px; color: var(--muted);">第 60 天</div><div class="meta">前额叶功能持续改善</div></div>
+                    <div><div class="h3" style="font-size: 13px; color: var(--muted);">第 90 天</div><div class="meta">多巴胺受体基本恢复</div></div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section style="padding: 0 18px; margin-top: 18px;">
+              <button class="btn-outlined" data-od-id="btn-share">导出周报 · 仅本地</button>
+              <p class="meta" style="text-align: center; margin-top: 12px;">数据所有权属于你</p>
+
+            <section style="padding: 0 18px; margin-top: 24px;" data-od-id="firstuse-hint">
+              <div style="background: var(--surface-warm); border: 1px dashed var(--border); border-radius: 18px; padding: 18px;">
+                <div class="row" style="align-items: flex-start; gap: 12px;">
+                  <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--bg); display: grid; place-items: center; flex-shrink: 0;">
+                    <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; stroke: var(--accent); fill: none; stroke-width: 1.7;"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>
+                  </div>
+                  <div style="flex: 1;">
+                    <p class="meta" style="margin: 0 0 6px;">如果这是你第一天</p>
+                    <p style="margin: 0; font-size: 13px; color: var(--fg-2); line-height: 1.55;">清流不会催你做任何事。<br/>先做你能做的那一件 — 哪怕只是打开 App 一次。</p>
+                    <a href="#and-urge" data-od-id="firstuse-link" style="display: inline-block; margin-top: 10px; font-size: 13px; color: var(--accent); font-weight: 500;">看看你的第一个应对工具 →</a>
+                  </div>
+                </div>
+              </div>
+            </section>
+            </section>
+          </main>
+
+          <nav class="navbar" data-od-id="navbar-data">
+            <a class="nav-tab"><span class="ic"><svg viewBox="0 0 24 24"><path d="M3 12 12 3l9 9"/><path d="M5 10v10h14V10"/></svg></span>今日</a>
+            <a class="nav-tab"><span class="ic"><svg viewBox="0 0 24 24"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg></span>渴望</a>
+            <a class="nav-tab active"><span class="ic"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l3-3 4 4 6-7"/></svg></span>进展</a>
+            <a class="nav-tab"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg></span>我的</a>
+          </nav>
+
+          <div class="gesture-bar" aria-hidden></div>
+        </div>
+      </div>
+    </article>
+
+  </main>
+
+  <script>
+    // T4 breathing — same cycle as iOS
+    (function() {
+      const ring = document.getElementById('and-t4-ring');
+      const phaseEl = document.getElementById('and-t4-phase');
+      const countdownEl = document.getElementById('and-t4-countdown');
+      if (!ring) return;
+      let step = 0;
+      const sequence = [
+        { label: '吸气', seconds: 4, from: 0.6, to: 1.0 },
+        { label: '屏息', seconds: 2, from: 1.0, to: 1.0 },
+        { label: '呼气', seconds: 6, from: 1.0, to: 0.55 }
+      ];
+      function stepOnce() {
+        const s = sequence[step % 3];
+        phaseEl.textContent = s.label;
+        ring.style.transitionDuration = s.seconds + 's';
+        ring.style.transform = `scale(${s.from})`;
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          ring.style.transform = `scale(${s.to})`;
+        }));
+        let n = s.seconds;
+        countdownEl.textContent = n;
+        const iv = setInterval(() => { n--; countdownEl.textContent = Math.max(0, n); if (n <= 0) clearInterval(iv); }, 1000);
+        step++;
+        setTimeout(stepOnce, s.seconds * 1000);
+      }
+      stepOnce();
+    })();
+
+    // Chip selection on relapse questionnaire
+    (function() {
+      document.querySelectorAll('[data-od-id^="and-chip-"]').forEach((chip) => {
+        chip.addEventListener('click', () => {
+          const isSelected = chip.classList.contains('selected');
+          chip.classList.toggle('selected', !isSelected);
+          if (!isSelected) {
+            chip.style.background = 'color-mix(in oklab, var(--accent) 12%, transparent)';
+            chip.style.borderColor = 'var(--accent)';
+            chip.style.color = 'var(--accent)';
+            chip.querySelector('svg')?.remove();
+            const check = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            check.setAttribute('viewBox','0 0 24 24');
+            check.setAttribute('style','width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;');
+            check.innerHTML = '<path d="M5 13l4 4L19 7"/>';
+            chip.appendChild(check);
+          } else {
+            chip.style.background = 'var(--surface)';
+            chip.style.borderColor = 'var(--border)';
+            chip.style.color = 'var(--fg)';
+            chip.querySelector('svg')?.remove();
+            const sp = document.createElement('span');
+            sp.style.width = '18px';
+            chip.appendChild(sp);
+          }
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
