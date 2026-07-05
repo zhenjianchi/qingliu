@@ -1,728 +1,70 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_constants.dart';
-import '../../core/log/app_logger.dart';
+import '../../core/theme/app_theme.dart';
 import '../../domain/entities/urge_technique.dart';
-import '../widgets/atoms.dart';
-import '../widgets/tactile_card.dart';
-import 'technique_guide_page.dart';
 import 'breathing_guide_page.dart';
 import 'grounding_guide_page.dart';
 import 'self_dialogue_guide_page.dart';
+import 'technique_guide_page.dart';
+import 'reflection_page.dart';
 
-/// V2.0 Urge Panel - Semantic 3-choice intensity selector + Lingo design
+/// V3.0 Urge Panel
+/// 参考: doc/design/20260705/HTML/mobile-ios.html (Screen 02)
+///
+/// - "渴望来袭？" header
+/// - Strength slider 1-10
+/// - 3 recommended technique cards
+/// - 随机抽卡 card (dashed)
+/// - 写下此刻想法 (可选)
+/// - ✓ 成功应对 button
 class UrgePanelPage extends StatefulWidget {
   const UrgePanelPage({super.key});
-
   @override
   State<UrgePanelPage> createState() => _UrgePanelPageState();
 }
 
-class _UrgePanelPageState extends State<UrgePanelPage>
-    with TickerProviderStateMixin {
-  final _logger = AppLogger.instance;
-
-  // Semantic urgency level: low / mid / high
-  int _urgency = 2; // 1=low, 2=mid, 3=high
-  int _selectedUrgeLevel = 5;
+class _UrgePanelPageState extends State<UrgePanelPage> {
+  int _urgeLevel = 7;
   List<UrgeTechnique> _sortedTechniques = [];
   bool _showAll = false;
   bool _isLotteryAnimating = false;
   UrgeTechnique? _lotteryResult;
 
-  final _cognitiveController = TextEditingController();
-  bool _showCognitive = false;
-
-  late AnimationController _slideController;
-  late Animation<Offset> _slideAnimation;
-  late AnimationController _lotteryController;
-  late Animation<double> _lotteryAnimation;
-
-  // User success counter (demo)
-  final int _successCount = 12;
-
   @override
   void initState() {
     super.initState();
-    _updateSortedTechniques();
-
-    _slideController = AnimationController(
-      duration: const Duration(milliseconds: 400),
-      vsync: this,
-    );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _slideController,
-      curve: Curves.easeOutCubic,
-    ));
-    _slideController.forward();
-
-    _lotteryController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    );
-    _lotteryAnimation = CurvedAnimation(
-      parent: _lotteryController,
-      curve: Curves.elasticOut,
-    );
+    _updateSorted();
   }
 
-  @override
-  void dispose() {
-    _cognitiveController.dispose();
-    _slideController.dispose();
-    _lotteryController.dispose();
-    super.dispose();
+  void _updateSorted() {
+    _sortedTechniques = UrgeTechnique.getSortedForUrgeLevel(_urgeLevel);
   }
 
-  void _updateSortedTechniques() {
-    _sortedTechniques = UrgeTechnique.getSortedForUrgeLevel(_selectedUrgeLevel);
+  String _urgencyLabel(int level) {
+    if (level <= 3) return '微弱';
+    if (level <= 7) return '中等偏高';
+    return '强烈';
   }
 
-  void _setUrgency(int level, int actualValue) {
+  void _onLevelChanged(int v) {
     setState(() {
-      _urgency = level;
-      _selectedUrgeLevel = actualValue;
-      _updateSortedTechniques();
+      _urgeLevel = v;
+      _updateSorted();
     });
   }
 
-  Future<void> _playLotteryAnimation() async {
+  Future<void> _drawRandom() async {
     if (_isLotteryAnimating) return;
-
+    setState(() => _isLotteryAnimating = true);
+    await Future.delayed(const Duration(milliseconds: 700));
+    if (_sortedTechniques.isEmpty) return;
+    final pick = _sortedTechniques[
+        DateTime.now().millisecondsSinceEpoch % _sortedTechniques.length];
     setState(() {
-      _isLotteryAnimating = true;
-      _lotteryResult = null;
-    });
-
-    final random = Random();
-    final availableTechs = _sortedTechniques.skip(3).toList();
-    if (availableTechs.isEmpty) {
-      availableTechs.addAll(_sortedTechniques);
-    }
-
-    _lotteryController.reset();
-    _lotteryController.forward();
-
-    await Future.delayed(const Duration(milliseconds: 800));
-
-    final selected = availableTechs[random.nextInt(availableTechs.length)];
-
-    setState(() {
-      _lotteryResult = selected;
+      _lotteryResult = pick;
       _isLotteryAnimating = false;
     });
-  }
-
-  void _resetLottery() {
-    setState(() => _lotteryResult = null);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SafeArea(
-        child: SlideTransition(
-          position: _slideAnimation,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(kPaddingLarge),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(context),
-                const SizedBox(height: 24),
-
-                // Success counter (always visible)
-                _buildSuccessCounter(context),
-                const SizedBox(height: 24),
-
-                // Step 1: Urgency selection (semantic 3-choice)
-                _buildUrgencySection(context),
-                const SizedBox(height: 24),
-
-                // Step 2: Top recommendation
-                _buildTopRecommendation(context),
-                if (_lotteryResult != null) ...[
-                  const SizedBox(height: 16),
-                  _buildLotteryResultCard(context),
-                ],
-                const SizedBox(height: 16),
-
-                // Step 3: Other techniques
-                _buildTechniqueSection(context),
-                const SizedBox(height: 24),
-
-                // Step 4: Cognitive reframing
-                _buildCognitiveSection(context),
-                const SizedBox(height: 24),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: const Color(kColorPrimary),
-            borderRadius: BorderRadius.circular(kBorderRadius),
-          ),
-          child: const Icon(Icons.bolt, color: Colors.white, size: 24),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '渴望应对',
-                style: GoogleFonts.nunito(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              Text(
-                '我们一起度过这 90 秒',
-                style: GoogleFonts.nunito(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(kColorTextSecondary),
-                ),
-              ),
-            ],
-          ),
-        ),
-        IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.close),
-          color: const Color(kColorTextHint),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSuccessCounter(BuildContext context) {
-    return TactileCard(
-      borderColor: const Color(kColorSecondary),
-      child: Row(
-        children: [
-          const Text('🏆', style: TextStyle(fontSize: 36)),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '你已经成功应对 $_successCount 次',
-                  style: GoogleFonts.nunito(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: const Color(kColorSecondaryDark),
-                  ),
-                ),
-                Text(
-                  '每多一次，你的大脑就更强一点',
-                  style: GoogleFonts.nunito(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(kColorTextSecondary),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildUrgencySection(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '此刻你的渴望是什么感觉？',
-          style: GoogleFonts.nunito(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _UrgencyCard(
-                emoji: '😌',
-                label: '有点想',
-                range: '1-3',
-                color: const Color(kColorWarning),
-                selected: _urgency == 1,
-                onTap: () => _setUrgency(1, 2),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _UrgencyCard(
-                emoji: '😰',
-                label: '很强烈',
-                range: '4-7',
-                color: const Color(0xFFFF8C42),
-                selected: _urgency == 2,
-                onTap: () => _setUrgency(2, 5),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _UrgencyCard(
-                emoji: '🔥',
-                label: '压不住',
-                range: '8-10',
-                color: const Color(kColorDanger),
-                selected: _urgency == 3,
-                onTap: () => _setUrgency(3, 8),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTopRecommendation(BuildContext context) {
-    final topTech = _sortedTechniques.isNotEmpty ? _sortedTechniques.first : null;
-    if (topTech == null) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Text('🎯', style: TextStyle(fontSize: 18)),
-            const SizedBox(width: 6),
-            Text(
-              '先试试这个 →',
-              style: GoogleFonts.nunito(
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-                color: const Color(kColorPrimary),
-                letterSpacing: 1,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        PressableCard(
-          onTap: () => _navigateToTechnique(topTech),
-          padding: const EdgeInsets.all(20),
-          child: Row(
-            children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: topTech.iconColor.withAlpha(40),
-                  borderRadius: BorderRadius.circular(kBorderRadius),
-                ),
-                child: Center(
-                  child: Icon(topTech.icon, color: topTech.iconColor, size: 32),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      topTech.name,
-                      style: GoogleFonts.nunito(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Pill(
-                          label: '约 ${topTech.durationSeconds}s',
-                          color: const Color(kColorPrimary),
-                          fontSize: 11,
-                        ),
-                        const SizedBox(width: 8),
-                        Pill(
-                          label: topTech.keyMechanism,
-                          color: topTech.iconColor,
-                          fontSize: 11,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.arrow_forward_ios, color: Color(kColorPrimary), size: 16),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        Center(
-          child: TextButton.icon(
-            onPressed: _isLotteryAnimating ? null : _playLotteryAnimation,
-            icon: _isLotteryAnimating
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.casino, color: Color(kColorSecondary)),
-            label: Text(
-              '换一个',
-              style: GoogleFonts.nunito(
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-                color: const Color(kColorSecondary),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLotteryResultCard(BuildContext context) {
-    final tech = _lotteryResult!;
-    return ScaleTransition(
-      scale: _lotteryAnimation,
-      child: TactileCard(
-        borderColor: const Color(kColorSecondary),
-        onTap: () => _navigateToTechnique(tech),
-        child: Row(
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: tech.iconColor.withAlpha(40),
-                borderRadius: BorderRadius.circular(kBorderRadius),
-              ),
-              child: Center(
-                child: Icon(tech.icon, color: tech.iconColor, size: 28),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '试试这个 ✨',
-                    style: GoogleFonts.nunito(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                      color: const Color(kColorSecondary),
-                      letterSpacing: 1,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    tech.name,
-                    style: GoogleFonts.nunito(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  Text(
-                    '${tech.durationSeconds}s · ${tech.keyMechanism}',
-                    style: GoogleFonts.nunito(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(kColorTextSecondary),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTechniqueSection(BuildContext context) {
-    final displayList = _showAll
-        ? _sortedTechniques
-        : _sortedTechniques.skip(1).take(5).toList();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              '其他选择',
-              style: GoogleFonts.nunito(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const Spacer(),
-            if (!_showAll && _sortedTechniques.length > 6)
-              TextButton(
-                onPressed: () => setState(() => _showAll = true),
-                child: Text(
-                  '查看全部 (${_sortedTechniques.length})',
-                  style: GoogleFonts.nunito(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(kColorPrimary),
-                  ),
-                ),
-              )
-            else if (_showAll)
-              TextButton(
-                onPressed: () => setState(() => _showAll = false),
-                child: Text(
-                  '收起',
-                  style: GoogleFonts.nunito(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(kColorPrimary),
-                  ),
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        ...displayList.asMap().entries.map((entry) {
-          final tech = entry.value;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: _buildTechniqueTile(tech),
-          );
-        }),
-      ],
-    );
-  }
-
-  Widget _buildTechniqueTile(UrgeTechnique tech) {
-    final inRange = _selectedUrgeLevel >= tech.minUrgeLevel &&
-        _selectedUrgeLevel <= tech.maxUrgeLevel;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => _navigateToTechnique(tech),
-        borderRadius: BorderRadius.circular(kBorderRadius),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: inRange
-                ? tech.iconColor.withAlpha(20)
-                : Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(kBorderRadius),
-            border: Border.all(
-              color: inRange ? tech.iconColor : const Color(0xFFEAEAEA),
-              width: 1.5,
-            ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: tech.iconColor.withAlpha(40),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Center(
-                  child: Icon(tech.icon, color: tech.iconColor, size: 22),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      tech.name,
-                      style: GoogleFonts.nunito(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${tech.durationSeconds}s · ${tech.keyMechanism}',
-                      style: GoogleFonts.nunito(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(kColorTextSecondary),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (inRange)
-                Pill(
-                  label: '适合',
-                  color: tech.iconColor,
-                  fontSize: 10,
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCognitiveSection(BuildContext context) {
-    return TactileCard(
-      onTap: () => setState(() => _showCognitive = !_showCognitive),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(kColorSecondary).withAlpha(40),
-                  borderRadius: BorderRadius.circular(kBorderRadius),
-                ),
-                child: const Icon(Icons.edit_note,
-                    color: Color(kColorSecondary), size: 22),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '写下我现在在想什么',
-                      style: GoogleFonts.nunito(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    Text(
-                      '认知重构',
-                      style: GoogleFonts.nunito(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(kColorTextHint),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              AnimatedRotation(
-                turns: _showCognitive ? 0.5 : 0,
-                duration: const Duration(milliseconds: 200),
-                child: const Icon(Icons.keyboard_arrow_down,
-                    color: Color(kColorTextHint)),
-              ),
-            ],
-          ),
-          if (_showCognitive) _buildCognitiveInput(context),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCognitiveInput(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Divider(),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _cognitiveController,
-            maxLines: 3,
-            style: GoogleFonts.nunito(fontWeight: FontWeight.w600),
-            decoration: InputDecoration(
-              hintText: '现在脑海中出现的画面或想法...',
-              hintStyle: GoogleFonts.nunito(
-                color: const Color(kColorTextHint),
-                fontWeight: FontWeight.w600,
-              ),
-              filled: true,
-              fillColor: const Color(kColorSurfaceAlt),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(kBorderRadius),
-                borderSide: BorderSide.none,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(kColorSecondary).withAlpha(30),
-              borderRadius: BorderRadius.circular(kBorderRadius),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.lightbulb_outline,
-                    color: Color(kColorSecondary), size: 18),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '这个想法是真的吗？还是多巴胺在骗你？',
-                    style: GoogleFonts.nunito(
-                      color: const Color(kColorSecondaryDark),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                _logger.info('Cognitive: ${_cognitiveController.text}', tag: 'UrgePanel');
-                _cognitiveController.clear();
-                setState(() => _showCognitive = false);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      '已记录，继续加油 💪',
-                      style: GoogleFonts.nunito(fontWeight: FontWeight.w800),
-                    ),
-                    backgroundColor: const Color(kColorPrimary),
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(kBorderRadius),
-                    ),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.check, color: Colors.white),
-              label: Text(
-                '保存并继续',
-                style: GoogleFonts.nunito(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   void _navigateToTechnique(UrgeTechnique tech) {
@@ -740,83 +82,464 @@ class _UrgePanelPageState extends State<UrgePanelPage>
       default:
         page = TechniqueGuidePage(technique: tech);
     }
-
-    Navigator.push(
-      context,
+    Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => page),
     );
   }
-}
 
-class _UrgencyCard extends StatelessWidget {
-  final String emoji;
-  final String label;
-  final String range;
-  final Color color;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _UrgencyCard({
-    required this.emoji,
-    required this.label,
-    required this.range,
-    required this.color,
-    required this.selected,
-    required this.onTap,
-  });
+  void _onSuccess() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const ReflectionPage()),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOut,
-        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
-        decoration: BoxDecoration(
-          color: selected ? color : color.withAlpha(30),
-          borderRadius: BorderRadius.circular(kBorderRadius),
-          border: Border.all(
-            color: color,
-            width: selected ? 3 : 2,
-          ),
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: color.withAlpha(102),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ]
-              : null,
-        ),
+    final topThree = _sortedTechniques.take(3).toList();
+
+    return Scaffold(
+      backgroundColor: const Color(kColorBackground),
+      body: SafeArea(
         child: Column(
           children: [
-            Text(
-              emoji,
-              style: TextStyle(fontSize: selected ? 40 : 32),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.nunito(
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-                color: selected ? Colors.white : color,
-              ),
-            ),
-            Text(
-              range,
-              style: GoogleFonts.nunito(
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                color: selected
-                    ? Colors.white.withAlpha(204)
-                    : color.withAlpha(180),
+            _buildHeader(context),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildStrengthSection(context),
+                    const SizedBox(height: 22),
+                    _buildRecommendSection(context, topThree),
+                    const SizedBox(height: 16),
+                    _buildLotteryButton(context),
+                    const SizedBox(height: 12),
+                    _buildMoreTechLink(context),
+                    const SizedBox(height: 18),
+                    _buildReframeSection(context),
+                    const SizedBox(height: 18),
+                    _buildSuccessButton(context),
+                    const SizedBox(height: 8),
+                  ],
+                ),
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 8, 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              '渴望来袭？',
+              style: GoogleFonts.inter(
+                fontSize: 24,
+                fontWeight: FontWeight.w600,
+                color: const Color(kColorTextPrimary),
+                letterSpacing: -0.4,
+                height: 1.2,
+              ),
+            ),
+          ),
+          _iconBtn(
+            Icons.close,
+            onTap: () => Navigator.of(context).pop(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _iconBtn(IconData icon, {required VoidCallback onTap}) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          width: 36,
+          height: 36,
+          alignment: Alignment.center,
+          child: Icon(icon, size: 18, color: const Color(kColorTextPrimary)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStrengthSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '先告诉我，此刻的强度',
+          style: AppTheme.monoLabel(
+            color: const Color(kColorTextHint),
+            fontSize: 11,
+          ).copyWith(letterSpacing: 0.16),
+        ),
+        const SizedBox(height: 14),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '微弱',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: const Color(kColorTextSecondary),
+              ),
+            ),
+            Text(
+              '强烈',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: const Color(kColorTextSecondary),
+              ),
+            ),
+          ],
+        ),
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            activeTrackColor: const Color(kColorPrimary),
+            inactiveTrackColor: const Color(kColorBorder),
+            thumbColor: const Color(kColorPrimary),
+            overlayColor: const Color(kColorPrimary).withAlpha(38),
+            trackHeight: 6,
+            thumbShape: const RoundSliderThumbShape(
+              enabledThumbRadius: 12,
+            ),
+          ),
+          child: Slider(
+            value: _urgeLevel.toDouble(),
+            min: 1,
+            max: 10,
+            divisions: 9,
+            onChanged: (v) => _onLevelChanged(v.round()),
+          ),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Text(
+              '$_urgeLevel',
+              style: GoogleFonts.jetBrainsMono(
+                fontSize: 36,
+                fontWeight: FontWeight.w600,
+                color: const Color(kColorPrimary),
+                letterSpacing: -0.5,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+            Text(
+              _urgencyLabel(_urgeLevel),
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: const Color(kColorTextSecondary),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecommendSection(
+      BuildContext context, List<UrgeTechnique> techs) {
+    if (techs.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '在此强度下，这些会有效',
+          style: AppTheme.monoLabel(
+            color: const Color(kColorTextHint),
+            fontSize: 11,
+          ).copyWith(letterSpacing: 0.16),
+        ),
+        const SizedBox(height: 12),
+        ...techs.asMap().entries.map((entry) {
+          final i = entry.key;
+          final tech = entry.value;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _buildTechCard(tech, i == 0),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildTechCard(UrgeTechnique tech, bool isTop) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _navigateToTechnique(tech),
+        borderRadius: BorderRadius.circular(kBorderRadius),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(kColorSurface),
+            borderRadius: BorderRadius.circular(kBorderRadius),
+            border: Border.all(color: const Color(kColorBorderSoft)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _pill(isTop ? '最优先' : '高优先', isTop),
+                  Text(
+                    '${tech.durationSeconds} 秒 · ${tech.keyMechanism}',
+                    style: AppTheme.monoLabel(
+                      color: const Color(kColorTextHint),
+                      fontSize: 11,
+                    ).copyWith(letterSpacing: 0.04),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'T${tech.id.substring(1)} · ${tech.name}',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(kColorTextPrimary),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _getTechDescription(tech),
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(kColorTextSecondary),
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _getTechDescription(UrgeTechnique tech) {
+    if (tech.id == 'T11') return '物理冷激活先于认知干预。冷洗后半段是对着镜子说三句话。';
+    if (tech.id == 'T4') return '呼气延长 → 副交感神经激活，刚好覆盖一个完整渴望周期。';
+    if (tech.id == 'T5') return '说出 5 件看见的、4 件能触摸的、3 件能听到的……把前额叶请回来。';
+    return tech.instruction.split('\n').first;
+  }
+
+  Widget _pill(String label, bool warm) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: warm
+            ? const Color(kColorWarning).withAlpha(31)
+            : const Color(kColorSurfaceWarm),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.inter(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: warm
+              ? const Color(kColorWarning)
+              : const Color(kColorTextSecondary),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLotteryButton(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _isLotteryAnimating ? null : _drawRandom,
+        borderRadius: BorderRadius.circular(kBorderRadius),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(kBorderRadius),
+            border: Border.all(
+              color: const Color(kColorBorder),
+              style: BorderStyle.solid,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: const Color(kColorSurfaceWarm),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                alignment: Alignment.center,
+                child: _isLotteryAnimating
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Color(kColorPrimary),
+                        ),
+                      )
+                    : const Icon(
+                        Icons.shuffle,
+                        size: 18,
+                        color: Color(kColorTextPrimary),
+                      ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _lotteryResult != null
+                          ? 'T${_lotteryResult!.id.substring(1)} · ${_lotteryResult!.name}'
+                          : '随机抽卡',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(kColorTextPrimary),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _lotteryResult != null
+                          ? '已抽到，试试这个'
+                          : '选不出来？让系统替你翻一张。',
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: const Color(kColorTextHint),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right,
+                size: 16,
+                color: Color(kColorTextHint),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMoreTechLink(BuildContext context) {
+    return Center(
+      child: TextButton(
+        onPressed: () => setState(() => _showAll = !_showAll),
+        style: TextButton.styleFrom(
+          foregroundColor: const Color(kColorPrimary),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+        ),
+        child: Text(
+          _showAll ? '收起 ▴' : '查看全部 11 种技术 ▾',
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReframeSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '写下此刻的想法（可选）',
+          style: AppTheme.monoLabel(
+            color: const Color(kColorTextHint),
+            fontSize: 11,
+          ).copyWith(letterSpacing: 0.16),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(kColorSurface),
+            borderRadius: BorderRadius.circular(kBorderRadius),
+            border: Border.all(color: const Color(kColorBorderSoft)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '"晚上 11 点，很累，刚下班到家……"',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontStyle: FontStyle.italic,
+                  color: const Color(kColorTextPrimary),
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '已自动加密 · 仅你可见',
+                    style: AppTheme.monoLabel(
+                      color: const Color(kColorTextHint),
+                      fontSize: 11,
+                    ).copyWith(letterSpacing: 0.04),
+                  ),
+                  Text(
+                    '继续 ▸',
+                    style: AppTheme.tabularNum(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(kColorPrimary),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSuccessButton(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: _onSuccess,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(kColorSuccess),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(kBorderRadiusPill),
+          ),
+        ),
+        icon: const Icon(Icons.check, size: 18),
+        label: Text(
+          '成功应对 · 记录这次',
+          style: GoogleFonts.inter(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
