@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/log/app_logger.dart';
 import '../../data/datasources/local_datasource.dart';
 import '../../domain/entities/abstinence_record.dart';
 import '../../domain/entities/log_entries.dart';
 import '../blocs/abstinence_bloc.dart';
+import '../widgets/day_wall.dart';
+import '../widgets/tactile_card.dart';
 
 class ProgressPage extends StatefulWidget {
   const ProgressPage({super.key});
@@ -134,6 +137,22 @@ class _ProgressPageState extends State<ProgressPage> {
                       Color(kColorAccent),
                     ),
                   ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Mood timeline (DayWall)
+              _buildCard(
+                title: '心情时间墙',
+                child: DayWall(
+                  entries: List.generate(
+                    30,
+                    (i) => DayEntry(
+                      date: DateTime.now().subtract(Duration(days: 29 - i)),
+                      moodLevel: ((i * 7) % 5) + 1,
+                      hasRecord: i > 10,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
